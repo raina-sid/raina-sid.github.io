@@ -1,0 +1,32 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Siddharth Raina"
+  description: "Notes on LLM evaluation, model audit, and measurement validity."
+  site-url: "https://raina-sid.github.io"
+  navbar:
+    right:
+      - text: Writing
+        href: index.qmd
+      - icon: github
+        href: https://github.com/raina-sid
+  page-footer:
+    center: "Siddharth Raina"
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-depth: 3
+    code-copy: true
+    code-overflow: wrap
+    anchor-sections: true
+    link-external-newwindow: true
+
+# Bibliography support is configured now so the survey can use it later
+# without restructuring: add `bibliography: references.bib` to a post's front
+# matter and cite with [@key].
+citation-style: chicago-author-date

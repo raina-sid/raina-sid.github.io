@@ -1,0 +1,265 @@
+---
+title: "Bounding what an agent can see: filtering tool outputs in Inspect"
+description: "Inspect has no sanctioned way to filter what a tool returns. The obvious-looking alternative fails open silently — here is a repro, and the pattern that does work."
+date: 2026-08-21
+categories: [evals, inspect, tooling]
+---
+
+## TL;DR
+
+- An eval result is only meaningful if you can bound what the agent could see. Once an agent has
+  real tools, that becomes a property of the **harness**: keeping graders and answer keys out of
+  reach, running controlled-information scenarios, gating contaminated results.
+- Approval can't do this: it runs pre-execution and can only rewrite the *call*, never the result.
+  Between execution and the model there appears to be no interception point at all.
+- Wrapping `ToolSource` works and fails closed. **Is that the intended pattern?** I couldn't find
+  it documented either way.
+- A caution for anyone else who reaches for `on_before_model_generate` instead: it fails open
+  silently. That behaviour *is* documented — just not next to the line that makes the hook look
+  like the right tool. Minimal repro below.
+
+## Why output control is an eval-integrity problem
+
+The general form: **an eval result is only meaningful if you can bound what the agent could
+see.** Once an agent has real tools, that stops being a property of the task and becomes a
+property of the harness.
+
+Concretely, in the direction Inspect is mostly used:
+
+- **Eval integrity.** Reference solutions, graders, hidden tests and answer keys have to stay out
+  of tool responses. If an agent can reach them, the score measures retrieval rather than
+  capability — and the result is not merely noisy, it is void. The July 2026 incident where models
+  escaped a sandbox to reach benchmark material is the loud version of this; the quiet version is a
+  search tool that happens to surface a writeup of the task.
+- **Controlled-information evals.** A large class of safety questions have the shape "what does
+  the model do when it has *exactly* this information and no more?" — sandbagging and
+  underperformance work, situational-awareness probes, scenarios testing whether an agent acts on
+  material it should not have. The information boundary *is* the experimental condition.
+- **Dangerous-capability elicitation.** Sometimes you want the agent to have a realistic tool while
+  specific content is withheld, and to measure whether it *tries* — which requires filtering the
+  result, not blocking the call.
+- **Contamination control.** Temporal gating is one instance: dropping results dated after a
+  decision point so a task is not trivially answerable from leaked future data.
+
+All of these are **output-level** controls. The call is legitimate; the *result* is what must be
+bounded. And all of them need to **fail closed** — a control that silently doesn't apply produces
+a clean-looking result that means nothing, which is worse than an error, because nothing in the log
+distinguishes it from a valid run.
+
+That is the part I couldn't find a sanctioned answer for, and why I think it matters beyond my own
+use case.
+
+### How I ran into it
+
+I built a small point-in-time probe — an agent answering "as of" a cutoff date with retrieval
+restricted to sources published before it, to separate what a model can work out from what it
+already remembers. That turned up the Exa provider crash I filed as
+[#4911](https://github.com/UKGovernmentBEIS/inspect_ai/issues/4911) and fixed in
+[#4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913). This is the other thing it
+turned up.
+
+To be clear on scope: I am not building a benchmark on this and am not proposing one. The probe
+was a few days' work; the question below is what it left behind.
+
+## Context — filtering outputs, not blocking calls
+
+Several eval designs need the harness to control *what a tool returns* before the model sees it,
+while still letting the tool run:
+
+- **Contamination / temporal gating** — drop results dated after a decision point, so a task isn't
+  trivially answerable from leaked future data.
+- **Controlled-information behavioural evals** — give an agent exactly the information a scenario
+  permits, and observe what it does.
+- **Harness integrity** — keep reference solutions, graders or hidden tests out of tool responses.
+
+These are output-level controls. The call is fine; the *result* is what must be filtered.
+
+## What I found
+
+**Approval is call-only.** `Approval.modified` is
+[`ToolCall | None`](https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/approval/_approval.py#L25),
+and the [`Approver` signature](https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/approval/_approver.py#L12-L17)
+takes `(message, call, view, history)` — the result doesn't exist yet when an approver runs.
+
+**Nothing sits between execution and the model.** The
+[result is returned unmediated](https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/model/_call_tools.py#L687),
+apart from size truncation.
+
+**Wrapping `ToolSource` does work.** Re-wrapping each `ToolDef` so the wrapper awaits the inner
+tool and filters the result before returning it gives an output-level control that fails closed,
+and it composes over MCP servers since `MCPServer` subclasses `ToolSource`. That's what I've been
+using. I couldn't find this pattern documented, hence the question.
+
+## A caution about `on_before_model_generate`
+
+This is the hook I reached for first, and I don't think I'd be the only one.
+[`docs/extensions-hooks.qmd:90`](https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/docs/extensions-hooks.qmd#L90)
+says mutating inputs there "is explicitly supported and intended", and `data.input` does flow into
+the provider call — so it reads like the sanctioned place to transform what the model sees.
+
+Three paragraphs later,
+[line 93](https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/docs/extensions-hooks.qmd#L93)
+notes that "any exception raised by a hook is caught and logged as a warning (it does not fail the
+run)", implemented at
+[`_hooks.py:1094-1104`](https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/hooks/_hooks.py#L1094-L1104).
+
+**Both facts are documented; they're just never connected.** Composed, they mean a filter
+implemented as a hook **fails open silently** — the model receives unfiltered input and the run
+reports success. Repro on `inspect-ai==0.3.258` (no API key; mechanism identical at `main`
+`331e2b0`):
+
+```
+[GATE RAISES]   status=success   hook raised=True   SECRET reached model=True
+                warning: Exception calling hook 'RedactionGate': gate failed: filter raised before redacting
+[GATE REDACTS]  status=success   hook raised=False  SECRET reached model=False
+```
+
+The second arm — same hook, mutating in place instead of raising — confirms the mechanism works.
+So the first arm is a *silent* failure, not a broken hook.
+
+I'm not suggesting hooks should propagate exceptions; a crashing observer shouldn't abort a run,
+and that's clearly deliberate. The narrow point is that the "explicitly supported and intended"
+line reads as an invitation to build controls there, and the consequence isn't stated next to it.
+
+<details><summary>Full repro (<code>python fail_open_repro.py</code>, no API key)</summary>
+
+```python
+"""
+Fail-open demonstration for Inspect's on_before_model_generate hook.
+
+Claim: a data-access gate implemented as an `on_before_model_generate` hook
+(the pattern the docs bless: "mutate data.input") SILENTLY FAILS OPEN. If the
+gate raises, Inspect's `_emit_to_all` swallows the exception to a
+`logger.warning` and the eval CONTINUES with the model receiving the
+UNREDACTED input. The run reports success. Nothing signals the control was skipped.
+
+Run against installed inspect_ai 0.3.258; mechanism verified identical at main @ 331e2b0
+(2026-08-20):
+  - _emit_to_all  src/inspect_ai/hooks/_hooks.py:1094-1104  (L1101-1102 re-raises
+                  LimitExceededError; L1103-1104 swallows everything else to
+                  logger.warning) -> hook exceptions are swallowed.
+  - dispatch      _hooks.py:894  on_before_model_generate
+  - BeforeModelGenerate.input is the SAME list object later sent to the provider
+    (_model.py:1291), so an in-place mutation flows through -- proving the gate
+    CAN work; the failure is specifically the silent one.
+
+Two arms:
+  RAISE  -> gate raises before redacting  -> secret REACHES the model, run succeeds.
+  REDACT -> gate mutates input in place    -> secret is removed (mechanism works).
+
+Run:  python fail_open_repro.py     (no API key needed; uses mockllm/model)
+"""
+
+import logging
+import tempfile
+
+from inspect_ai import Task, eval, task
+from inspect_ai.dataset import Sample
+from inspect_ai.hooks import BeforeModelGenerate, Hooks, hooks
+from inspect_ai.solver import generate
+
+SECRET = "SECRET-DATA-AFTER-CUTOFF"
+
+# Behaviour toggle, read at hook-call time. Set by run_arm() below.
+GATE_MODE = "raise"
+
+
+@hooks(name="redaction_gate", description="Redacts SECRET from model input (fail-open demo)")
+class RedactionGate(Hooks):
+    async def on_before_model_generate(self, data: BeforeModelGenerate) -> None:
+        if GATE_MODE == "raise":
+            # A realistic filter failure: an exception before redaction completes.
+            raise RuntimeError("gate failed: filter raised before redacting")
+        # Correct usage: mutate the shared message objects IN PLACE.
+        for msg in data.input:
+            if isinstance(msg.content, str) and SECRET in msg.content:
+                msg.content = msg.content.replace(SECRET, "[REDACTED]")
+
+
+@task
+def leak_task():
+    return Task(
+        dataset=[Sample(input=f"Here is confidential material: {SECRET}. Summarize it.")],
+        solver=generate(),
+    )
+
+
+class WarningCatcher(logging.Handler):
+    def __init__(self):
+        super().__init__(level=logging.WARNING)
+        self.records = []
+
+    def emit(self, record):
+        if "Exception calling hook" in record.getMessage():
+            self.records.append(record.getMessage())
+
+
+def model_input_text(log):
+    """Extract the input the model actually received, from the ModelEvent."""
+    for sample in log.samples or []:
+        for ev in sample.events or []:
+            if getattr(ev, "event", None) == "model":
+                return str(ev.input)
+    return "<no model event found>"
+
+
+def run_arm(mode):
+    global GATE_MODE
+    GATE_MODE = mode
+
+    catcher = WarningCatcher()
+    # inspect_ai sets propagate=False on its package logger and installs its own
+    # handler (see _util/logger.py), so attach directly to that logger.
+    pkg_logger = logging.getLogger("inspect_ai")
+    pkg_logger.addHandler(catcher)
+    if pkg_logger.level > logging.WARNING or pkg_logger.level == logging.NOTSET:
+        pkg_logger.setLevel(logging.WARNING)
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            logs = eval(leak_task(), model="mockllm/model", display="none", log_dir=d)
+            log = logs[0]
+            # Extract while the log dir still exists (samples are read lazily).
+            seen = model_input_text(log)
+            status = log.status
+    finally:
+        pkg_logger.removeHandler(catcher)
+
+    return {
+        "status": status,
+        "hook_raised": len(catcher.records) > 0,
+        "warning": catcher.records[0] if catcher.records else "(none)",
+        "secret_reached_model": SECRET in seen,
+    }
+
+
+if __name__ == "__main__":
+    print("=" * 78)
+    print("Inspect on_before_model_generate — fail-open demonstration")
+    print("=" * 78)
+    for mode, label in [
+        ("raise", "GATE RAISES (filter fails)"),
+        ("redact", "GATE REDACTS (works)"),
+    ]:
+        r = run_arm(mode)
+        print(f"\n[{label}]  mode={mode!r}")
+        print(f"  eval status ............ {r['status']}")
+        print(f"  hook raised ............ {r['hook_raised']}")
+        print(f"  warning logged ......... {r['warning']}")
+        print(f"  SECRET reached model ... {r['secret_reached_model']}")
+    print("\n" + "=" * 78)
+    print("If the RAISE arm shows: status=success, hook raised=True, SECRET reached=True,")
+    print("then the gate failed open silently — the eval passed with the control skipped.")
+    print("=" * 78)
+```
+
+</details>
+
+## Questions
+
+1. **Is wrapping `ToolSource` the intended way to filter tool outputs**, or is there an
+   interception point I've missed? Happy to share the wrapper if it's useful.
+2. Would a one-line cross-reference on the hooks page — noting that because hook exceptions are
+   swallowed, hooks aren't suitable for correctness-critical filtering — be worth a PR?
+3. Is there any appetite for a first-class, fail-closed tool-output interception point, or is
+   `ToolSource` wrapping considered sufficient?
+

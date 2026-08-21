@@ -1,0 +1,13 @@
+---
+title: "Writing"
+listing:
+  contents: posts
+  sort: "date desc"
+  type: default
+  fields: [date, title, description, reading-time]
+  feed: true
+page-layout: full
+---
+
+Notes on LLM evaluation, model audit, and measurement validity — mostly things I ran into while
+building evals and reading the tools' source.
