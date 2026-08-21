@@ -73,6 +73,36 @@ while still letting the tool run:
 
 These are output-level controls. The call is fine; the *result* is what must be filtered.
 
+## The obvious alternative: curate the corpus instead
+
+Before going further it's worth saying that there's a good answer to all of this which doesn't
+need any framework support: **don't filter at runtime, control the corpus up front.** Build the
+document set the agent can reach, serve only that, and the boundary is guaranteed by construction.
+Most `inspect_evals` tasks run on fixed datasets; `agentdojo` goes further and simulates the tool
+backends entirely; sandboxes default to `network_mode: none`. If your eval fits that shape,
+curation is strictly better than filtering — fewer moving parts, and nothing to fail open.
+
+I think it stops fitting in four places, and I'd be glad to be wrong about any of them.
+
+**Eval-awareness.** A conspicuously synthetic corpus is a tell. A model that infers it is being
+evaluated may behave differently — which is exactly the effect a lot of safety evals are trying to
+measure without contaminating. A real tool returning a filtered result is a smaller tell than an
+obviously fabricated document set. This is a hypothesis rather than something I've measured, but it
+seems like the case where curation is most costly.
+
+**External validity of the tool.** If part of what you're measuring is how an agent copes with
+noisy, contradictory or partly-wrong results, a clean curated corpus has removed the phenomenon.
+
+**Open-ended browsing.** Once an agent can follow a link, curation means the transitive closure of
+whatever it can reach. That isn't expensive so much as undefined.
+
+**Third-party services you don't control.** A live database, a code-execution backend, someone
+else's MCP server. You can't curate its responses. Filtering them is the only lever.
+
+None of this makes curation wrong — it makes it a different point on a trade-off. And if the answer
+is that Inspect is deliberately aimed at the curated end, that's worth knowing explicitly, because
+it changes what you build rather than how you build it.
+
 ## What I found
 
 **Approval is call-only.** `Approval.modified` is
