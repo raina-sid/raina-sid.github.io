@@ -5,26 +5,23 @@ date: 2026-08-21
 categories: [evals, inspect, tooling]
 ---
 
-## TL;DR
+## The claim
 
-- An eval result is only meaningful if you can bound what the agent could see. Once an agent has
-  real tools, that becomes a property of the **harness**: keeping graders and answer keys out of
-  reach, running controlled-information scenarios, gating contaminated results.
-- Approval can't do this: it runs pre-execution and can only rewrite the *call*, never the result.
-  Between execution and the model there appears to be no interception point at all.
-- Wrapping `ToolSource` works and fails closed. **Is that the intended pattern?** I couldn't find
-  it documented either way.
-- A caution for anyone else who reaches for `on_before_model_generate` instead: it fails open
-  silently. That behaviour *is* documented — just not next to the line that makes the hook look
-  like the right tool. Minimal repro below.
+Every eval makes an implicit claim about what the model had access to. With a fixed dataset that
+claim is easy to keep — you shipped the data, so you know. Give an agent a live tool and the claim
+stops being a property of the task and becomes a property of the **harness**: it now depends on
+what the harness let through.
 
-## Where this comes up
+Inspect has no sanctioned way to enforce that. Approval runs before the tool does and can only
+rewrite the *call*. Nothing sits between the result and the model. And the hook that looks like the
+right place **fails open silently** — if your filter raises, the model gets the unfiltered result
+and the run reports success.
 
-The version of this I keep running into: once an agent has real tools, what it *could* see stops
-being a property of the task and becomes a property of the harness. And a result is hard to
-interpret if that boundary isn't known.
+This post is about where that matters, what I tried, and what I think would help. The short
+version: I've been wrapping `ToolSource`, it works, and I'd like to know whether that's the
+intended answer or whether I'm solving a problem Inspect deliberately doesn't have.
 
-Places I've hit it, or expect to:
+## Why bound tool output at all
 
 - **Eval integrity.** Reference solutions, graders, hidden tests and answer keys have to stay out
   of tool responses. If an agent can reach them, the score measures retrieval rather than
@@ -48,30 +45,10 @@ error.
 
 That's the part I couldn't find a sanctioned answer for.
 
-### How I ran into it
 
-I built a small point-in-time probe — an agent answering "as of" a cutoff date with retrieval
-restricted to sources published before it, to separate what a model can work out from what it
-already remembers. That turned up the Exa provider crash I filed as
-[#4911](https://github.com/UKGovernmentBEIS/inspect_ai/issues/4911) and fixed in
-[#4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913). This is the other thing it
-turned up.
-
-To be clear on scope: I am not building a benchmark on this and am not proposing one. The probe
-was a few days' work; the question below is what it left behind.
-
-## Filtering outputs, not blocking calls
-
-Several eval designs need the harness to control *what a tool returns* before the model sees it,
-while still letting the tool run:
-
-- **Contamination / temporal gating** — drop results dated after a decision point, so a task isn't
-  trivially answerable from leaked future data.
-- **Controlled-information behavioural evals** — give an agent exactly the information a scenario
-  permits, and observe what it does.
-- **Harness integrity** — keep reference solutions, graders or hidden tests out of tool responses.
-
-These are output-level controls. The call is fine; the *result* is what must be filtered.
+What these share is that they're **output-level**: the call is legitimate, and it's the *result*
+that needs bounding. They also want to fail closed — a control that silently doesn't apply gives
+you a clean-looking result you can't distinguish from a valid one, which seems worse than an error.
 
 ## The obvious alternative: curate the corpus instead
 
@@ -283,12 +260,43 @@ if __name__ == "__main__":
 
 </details>
 
-## Questions
+## What I'd suggest
 
-1. **Is wrapping `ToolSource` the intended way to filter tool outputs**, or is there an
-   interception point I've missed? Happy to share the wrapper if it's useful.
-2. Would a one-line cross-reference on the hooks page — noting that because hook exceptions are
-   swallowed, hooks aren't suitable for correctness-critical filtering — be worth a PR?
-3. Is there any appetite for a first-class, fail-closed tool-output interception point, or is
-   `ToolSource` wrapping considered sufficient?
+In rough order of how much I'd be asking for:
 
+1. **A one-line cross-reference in the hooks docs.** `extensions-hooks.qmd:90` blesses mutating
+   `data.input`; line 93 notes hook exceptions are swallowed. Both are true and three paragraphs
+   apart. A pointer from the first to the second — "hooks are observers and fail open, so don't use
+   them for correctness-critical filtering" — would have saved me the detour. **Happy to PR this
+   today if it's wanted.**
+
+2. **A documented answer on the intended pattern.** If `ToolSource` wrapping is it, saying so in
+   the tools docs makes it discoverable; `tools-custom.qmd` currently covers `tool_with()`,
+   `ToolDef` and error handling but nothing about transforming a result. Also happy to PR.
+
+3. **Only if there's appetite: a first-class, fail-closed output interception point.** The OpenAI
+   Agents SDK has [`@tool_output_guardrail`](https://openai.github.io/openai-agents-python/guardrails/),
+   which runs after the tool executes and can replace the output or trip a wire. I'm not suggesting
+   Inspect should copy it — just that the shape recurs, and a sanctioned hook would fail closed by
+   construction rather than by convention.
+
+If the answer is instead "curate the corpus; runtime filtering isn't the model here", that's a
+good answer and worth stating explicitly, because it changes what people build rather than how.
+
+## Where this came from
+
+I built a small point-in-time probe — an agent answering "as of" a cutoff date with retrieval
+restricted to sources published before it, to separate what a model can work out from what it
+already remembers. That turned up the Exa provider crash I filed as
+[#4911](https://github.com/UKGovernmentBEIS/inspect_ai/issues/4911) and fixed in
+[#4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913). This is the other thing it
+turned up.
+
+I'm not building a benchmark on this and I'm not proposing one — the probe was a few days' work,
+and the question above is what it left behind.
+
+## The open question
+
+Is `ToolSource` wrapping the intended pattern, something I've missed, or a sign that runtime
+filtering isn't how Inspect expects this to be done? Any of those is a useful answer, and I'd
+rather build on the sanctioned thing than on a workaround I happened to find.
