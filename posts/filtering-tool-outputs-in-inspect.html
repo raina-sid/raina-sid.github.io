@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-08-21">
+<meta name="description" content="I went looking for a sanctioned way to filter what a tool returns, and couldn’t find one. Notes on what I tried, a hook that fails open silently, and the pattern I settled on.">
+
+<title>What’s the right way to filter tool outputs in Inspect? – Siddharth Raina</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-282abdd4a580632c052b6858c0510cd2.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Siddharth Raina</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Writing</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/raina-sid"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-claim" id="toc-the-claim" class="nav-link active" data-scroll-target="#the-claim">The claim</a></li>
+  <li><a href="#why-bound-tool-output-at-all" id="toc-why-bound-tool-output-at-all" class="nav-link" data-scroll-target="#why-bound-tool-output-at-all">Why bound tool output at all</a></li>
+  <li><a href="#the-obvious-alternative-curate-the-corpus-instead" id="toc-the-obvious-alternative-curate-the-corpus-instead" class="nav-link" data-scroll-target="#the-obvious-alternative-curate-the-corpus-instead">The obvious alternative: curate the corpus instead</a></li>
+  <li><a href="#what-i-found" id="toc-what-i-found" class="nav-link" data-scroll-target="#what-i-found">What I found</a></li>
+  <li><a href="#the-one-i-tried-first-on_before_model_generate" id="toc-the-one-i-tried-first-on_before_model_generate" class="nav-link" data-scroll-target="#the-one-i-tried-first-on_before_model_generate">The one I tried first: <code>on_before_model_generate</code></a></li>
+  <li><a href="#what-id-suggest" id="toc-what-id-suggest" class="nav-link" data-scroll-target="#what-id-suggest">What I’d suggest</a></li>
+  <li><a href="#where-this-came-from" id="toc-where-this-came-from" class="nav-link" data-scroll-target="#where-this-came-from">Where this came from</a></li>
+  <li><a href="#the-open-question" id="toc-the-open-question" class="nav-link" data-scroll-target="#the-open-question">The open question</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">What’s the right way to filter tool outputs in Inspect?</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">evals</div>
+    <div class="quarto-category">inspect</div>
+    <div class="quarto-category">tooling</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    I went looking for a sanctioned way to filter what a tool returns, and couldn’t find one. Notes on what I tried, a hook that fails open silently, and the pattern I settled on.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">August 21, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-claim" class="level2">
+<h2 class="anchored" data-anchor-id="the-claim">The claim</h2>
+<p>Every eval makes an implicit claim about what the model had access to. With a fixed dataset that claim is easy to keep — you shipped the data, so you know. Give an agent a live tool and the claim stops being a property of the task and becomes a property of the <strong>harness</strong>: it now depends on what the harness let through.</p>
+<p>Inspect has no sanctioned way to enforce that. Approval runs before the tool does and can only rewrite the <em>call</em>. Nothing sits between the result and the model. And the hook that looks like the right place <strong>fails open silently</strong> — if your filter raises, the model gets the unfiltered result and the run reports success.</p>
+<p>This post is about where that matters, what I tried, and what I think would help. The short version: I’ve been wrapping <code>ToolSource</code>, it works, and I’d like to know whether that’s the intended answer or whether I’m solving a problem Inspect deliberately doesn’t have.</p>
+</section>
+<section id="why-bound-tool-output-at-all" class="level2">
+<h2 class="anchored" data-anchor-id="why-bound-tool-output-at-all">Why bound tool output at all</h2>
+<ul>
+<li><strong>Eval integrity.</strong> Reference solutions, graders, hidden tests and answer keys have to stay out of tool responses. If an agent can reach them, the score measures retrieval rather than capability — and the result is not merely noisy, it is void. The July 2026 incident where models escaped a sandbox to reach benchmark material is the loud version of this; the quiet version is a search tool that happens to surface a writeup of the task.</li>
+<li><strong>Controlled-information evals.</strong> A large class of safety questions have the shape “what does the model do when it has <em>exactly</em> this information and no more?” — sandbagging and underperformance work, situational-awareness probes, scenarios testing whether an agent acts on material it should not have. The information boundary <em>is</em> the experimental condition.</li>
+<li><strong>Dangerous-capability elicitation.</strong> Sometimes you want the agent to have a realistic tool while specific content is withheld, and to measure whether it <em>tries</em> — which requires filtering the result, not blocking the call.</li>
+<li><strong>Contamination control.</strong> Temporal gating is one instance: dropping results dated after a decision point so a task is not trivially answerable from leaked future data.</li>
+</ul>
+<p>What these have in common is that they’re <strong>output-level</strong> — the call is legitimate, and it’s the <em>result</em> that needs bounding. They also want to fail closed: a control that silently doesn’t apply gives you a clean-looking result you can’t distinguish from a valid one, which seems worse than an error.</p>
+<p>That’s the part I couldn’t find a sanctioned answer for.</p>
+<p>What these share is that they’re <strong>output-level</strong>: the call is legitimate, and it’s the <em>result</em> that needs bounding. They also want to fail closed — a control that silently doesn’t apply gives you a clean-looking result you can’t distinguish from a valid one, which seems worse than an error.</p>
+</section>
+<section id="the-obvious-alternative-curate-the-corpus-instead" class="level2">
+<h2 class="anchored" data-anchor-id="the-obvious-alternative-curate-the-corpus-instead">The obvious alternative: curate the corpus instead</h2>
+<p>Before going further it’s worth saying that there’s a good answer to all of this which doesn’t need any framework support: <strong>don’t filter at runtime, control the corpus up front.</strong> Build the document set the agent can reach, serve only that, and the boundary is guaranteed by construction. Most <code>inspect_evals</code> tasks run on fixed datasets; <code>agentdojo</code> goes further and simulates the tool backends entirely; sandboxes default to <code>network_mode: none</code>. If your eval fits that shape, curation is strictly better than filtering — fewer moving parts, and nothing to fail open.</p>
+<p>I think it stops fitting in four places, and I’d be glad to be wrong about any of them.</p>
+<p><strong>Eval-awareness.</strong> A conspicuously synthetic corpus is a tell. A model that infers it is being evaluated may behave differently — which is exactly the effect a lot of safety evals are trying to measure without contaminating. A real tool returning a filtered result is a smaller tell than an obviously fabricated document set. This is a hypothesis rather than something I’ve measured, but it seems like the case where curation is most costly.</p>
+<p><strong>External validity of the tool.</strong> If part of what you’re measuring is how an agent copes with noisy, contradictory or partly-wrong results, a clean curated corpus has removed the phenomenon.</p>
+<p><strong>Open-ended browsing.</strong> Once an agent can follow a link, curation means the transitive closure of whatever it can reach. That isn’t expensive so much as undefined.</p>
+<p><strong>Third-party services you don’t control.</strong> A live database, a code-execution backend, someone else’s MCP server. You can’t curate its responses. Filtering them is the only lever.</p>
+<p>None of this makes curation wrong — it makes it a different point on a trade-off. And if the answer is that Inspect is deliberately aimed at the curated end, that’s worth knowing explicitly, because it changes what you build rather than how you build it.</p>
+</section>
+<section id="what-i-found" class="level2">
+<h2 class="anchored" data-anchor-id="what-i-found">What I found</h2>
+<p><strong>Approval is call-only.</strong> <code>Approval.modified</code> is <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/approval/_approval.py#L25"><code>ToolCall | None</code></a>, and the <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/approval/_approver.py#L12-L17"><code>Approver</code> signature</a> takes <code>(message, call, view, history)</code> — the result doesn’t exist yet when an approver runs.</p>
+<p><strong>Nothing sits between execution and the model.</strong> The <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/model/_call_tools.py#L687">result is returned unmediated</a>, apart from size truncation.</p>
+<p><strong>Wrapping <code>ToolSource</code> does work.</strong> Re-wrapping each <code>ToolDef</code> so the wrapper awaits the inner tool and filters the result before returning it gives an output-level control that fails closed, and it composes over MCP servers since <code>MCPServer</code> subclasses <code>ToolSource</code>. That’s what I’ve been using. I couldn’t find this pattern documented, hence the question.</p>
+</section>
+<section id="the-one-i-tried-first-on_before_model_generate" class="level2">
+<h2 class="anchored" data-anchor-id="the-one-i-tried-first-on_before_model_generate">The one I tried first: <code>on_before_model_generate</code></h2>
+<p>This is the hook I reached for first, and I don’t think I’d be the only one. <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/docs/extensions-hooks.qmd#L90"><code>docs/extensions-hooks.qmd:90</code></a> says mutating inputs there “is explicitly supported and intended”, and <code>data.input</code> does flow into the provider call — so it reads like the sanctioned place to transform what the model sees.</p>
+<p>Three paragraphs later, <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/docs/extensions-hooks.qmd#L93">line 93</a> notes that “any exception raised by a hook is caught and logged as a warning (it does not fail the run)”, implemented at <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/hooks/_hooks.py#L1094-L1104"><code>_hooks.py:1094-1104</code></a>.</p>
+<p><strong>Both facts are documented; they’re just never connected.</strong> Composed, they mean a filter implemented as a hook <strong>fails open silently</strong> — the model receives unfiltered input and the run reports success. Repro on <code>inspect-ai==0.3.258</code> (no API key; mechanism identical at <code>main</code> <code>331e2b0</code>):</p>
+<pre><code>[GATE RAISES]   status=success   hook raised=True   SECRET reached model=True
+                warning: Exception calling hook 'RedactionGate': gate failed: filter raised before redacting
+[GATE REDACTS]  status=success   hook raised=False  SECRET reached model=False</code></pre>
+<p>The second arm — same hook, mutating in place instead of raising — confirms the mechanism works. So the first arm is a <em>silent</em> failure, not a broken hook.</p>
+<p>I’m not suggesting hooks should propagate exceptions; a crashing observer shouldn’t abort a run, and that’s clearly deliberate. The narrow point is that the “explicitly supported and intended” line reads as an invitation to build controls there, and the consequence isn’t stated next to it.</p>
+<details>
+<summary>
+Full repro (<code>python fail_open_repro.py</code>, no API key)
+</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">Fail-open demonstration for Inspect's on_before_model_generate hook.</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">Claim: a data-access gate implemented as an `on_before_model_generate` hook</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">(the pattern the docs bless: "mutate data.input") SILENTLY FAILS OPEN. If the</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">gate raises, Inspect's `_emit_to_all` swallows the exception to a</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">`logger.warning` and the eval CONTINUES with the model receiving the</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">UNREDACTED input. The run reports success. Nothing signals the control was skipped.</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">Run against installed inspect_ai 0.3.258; mechanism verified identical at main @ 331e2b0</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">(2026-08-20):</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">  - _emit_to_all  src/inspect_ai/hooks/_hooks.py:1094-1104  (L1101-1102 re-raises</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co">                  LimitExceededError; L1103-1104 swallows everything else to</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co">                  logger.warning) -&gt; hook exceptions are swallowed.</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">  - dispatch      _hooks.py:894  on_before_model_generate</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co">  - BeforeModelGenerate.input is the SAME list object later sent to the provider</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co">    (_model.py:1291), so an in-place mutation flows through -- proving the gate</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">    CAN work; the failure is specifically the silent one.</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co">Two arms:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">  RAISE  -&gt; gate raises before redacting  -&gt; secret REACHES the model, run succeeds.</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">  REDACT -&gt; gate mutates input in place    -&gt; secret is removed (mechanism works).</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">Run:  python fail_open_repro.py     (no API key needed; uses mockllm/model)</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai <span class="im">import</span> Task, <span class="bu">eval</span>, task</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.dataset <span class="im">import</span> Sample</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.hooks <span class="im">import</span> BeforeModelGenerate, Hooks, hooks</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> inspect_ai.solver <span class="im">import</span> generate</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>SECRET <span class="op">=</span> <span class="st">"SECRET-DATA-AFTER-CUTOFF"</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Behaviour toggle, read at hook-call time. Set by run_arm() below.</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>GATE_MODE <span class="op">=</span> <span class="st">"raise"</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="at">@hooks</span>(name<span class="op">=</span><span class="st">"redaction_gate"</span>, description<span class="op">=</span><span class="st">"Redacts SECRET from model input (fail-open demo)"</span>)</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> RedactionGate(Hooks):</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> on_before_model_generate(<span class="va">self</span>, data: BeforeModelGenerate) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> GATE_MODE <span class="op">==</span> <span class="st">"raise"</span>:</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>            <span class="co"># A realistic filter failure: an exception before redaction completes.</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"gate failed: filter raised before redacting"</span>)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Correct usage: mutate the shared message objects IN PLACE.</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> msg <span class="kw">in</span> data.<span class="bu">input</span>:</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="bu">isinstance</span>(msg.content, <span class="bu">str</span>) <span class="kw">and</span> SECRET <span class="kw">in</span> msg.content:</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>                msg.content <span class="op">=</span> msg.content.replace(SECRET, <span class="st">"[REDACTED]"</span>)</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="at">@task</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> leak_task():</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Task(</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>        dataset<span class="op">=</span>[Sample(<span class="bu">input</span><span class="op">=</span><span class="ss">f"Here is confidential material: </span><span class="sc">{</span>SECRET<span class="sc">}</span><span class="ss">. Summarize it."</span>)],</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>        solver<span class="op">=</span>generate(),</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> WarningCatcher(logging.Handler):</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(level<span class="op">=</span>logging.WARNING)</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.records <span class="op">=</span> []</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> emit(<span class="va">self</span>, record):</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="st">"Exception calling hook"</span> <span class="kw">in</span> record.getMessage():</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.records.append(record.getMessage())</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> model_input_text(log):</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Extract the input the model actually received, from the ModelEvent."""</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> sample <span class="kw">in</span> log.samples <span class="kw">or</span> []:</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> ev <span class="kw">in</span> sample.events <span class="kw">or</span> []:</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="bu">getattr</span>(ev, <span class="st">"event"</span>, <span class="va">None</span>) <span class="op">==</span> <span class="st">"model"</span>:</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span> <span class="bu">str</span>(ev.<span class="bu">input</span>)</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"&lt;no model event found&gt;"</span></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_arm(mode):</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    <span class="kw">global</span> GATE_MODE</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    GATE_MODE <span class="op">=</span> mode</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>    catcher <span class="op">=</span> WarningCatcher()</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>    <span class="co"># inspect_ai sets propagate=False on its package logger and installs its own</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>    <span class="co"># handler (see _util/logger.py), so attach directly to that logger.</span></span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>    pkg_logger <span class="op">=</span> logging.getLogger(<span class="st">"inspect_ai"</span>)</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    pkg_logger.addHandler(catcher)</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> pkg_logger.level <span class="op">&gt;</span> logging.WARNING <span class="kw">or</span> pkg_logger.level <span class="op">==</span> logging.NOTSET:</span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>        pkg_logger.setLevel(logging.WARNING)</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> tempfile.TemporaryDirectory() <span class="im">as</span> d:</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>            logs <span class="op">=</span> <span class="bu">eval</span>(leak_task(), model<span class="op">=</span><span class="st">"mockllm/model"</span>, display<span class="op">=</span><span class="st">"none"</span>, log_dir<span class="op">=</span>d)</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>            log <span class="op">=</span> logs[<span class="dv">0</span>]</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Extract while the log dir still exists (samples are read lazily).</span></span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>            seen <span class="op">=</span> model_input_text(log)</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>            status <span class="op">=</span> log.status</span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>    <span class="cf">finally</span>:</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>        pkg_logger.removeHandler(catcher)</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>        <span class="st">"status"</span>: status,</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>        <span class="st">"hook_raised"</span>: <span class="bu">len</span>(catcher.records) <span class="op">&gt;</span> <span class="dv">0</span>,</span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>        <span class="st">"warning"</span>: catcher.records[<span class="dv">0</span>] <span class="cf">if</span> catcher.records <span class="cf">else</span> <span class="st">"(none)"</span>,</span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>        <span class="st">"secret_reached_model"</span>: SECRET <span class="kw">in</span> seen,</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">78</span>)</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Inspect on_before_model_generate — fail-open demonstration"</span>)</span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">78</span>)</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> mode, label <span class="kw">in</span> [</span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>        (<span class="st">"raise"</span>, <span class="st">"GATE RAISES (filter fails)"</span>),</span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>        (<span class="st">"redact"</span>, <span class="st">"GATE REDACTS (works)"</span>),</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>    ]:</span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>        r <span class="op">=</span> run_arm(mode)</span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">[</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">]  mode=</span><span class="sc">{</span>mode<span class="sc">!r}</span><span class="ss">"</span>)</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  eval status ............ </span><span class="sc">{</span>r[<span class="st">'status'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  hook raised ............ </span><span class="sc">{</span>r[<span class="st">'hook_raised'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  warning logged ......... </span><span class="sc">{</span>r[<span class="st">'warning'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  SECRET reached model ... </span><span class="sc">{</span>r[<span class="st">'secret_reached_model'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span> <span class="op">*</span> <span class="dv">78</span>)</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"If the RAISE arm shows: status=success, hook raised=True, SECRET reached=True,"</span>)</span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"then the gate failed open silently — the eval passed with the control skipped."</span>)</span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"="</span> <span class="op">*</span> <span class="dv">78</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</section>
+<section id="what-id-suggest" class="level2">
+<h2 class="anchored" data-anchor-id="what-id-suggest">What I’d suggest</h2>
+<p>In rough order of how much I’d be asking for:</p>
+<ol type="1">
+<li><p><strong>A one-line cross-reference in the hooks docs.</strong> <code>extensions-hooks.qmd:90</code> blesses mutating <code>data.input</code>; line 93 notes hook exceptions are swallowed. Both are true and three paragraphs apart. A pointer from the first to the second — “hooks are observers and fail open, so don’t use them for correctness-critical filtering” — would have saved me the detour. <strong>Happy to PR this today if it’s wanted.</strong></p></li>
+<li><p><strong>A documented answer on the intended pattern.</strong> If <code>ToolSource</code> wrapping is it, saying so in the tools docs makes it discoverable; <code>tools-custom.qmd</code> currently covers <code>tool_with()</code>, <code>ToolDef</code> and error handling but nothing about transforming a result. Also happy to PR.</p></li>
+<li><p><strong>Only if there’s appetite: a first-class, fail-closed output interception point.</strong> The OpenAI Agents SDK has <a href="https://openai.github.io/openai-agents-python/guardrails/"><code>@tool_output_guardrail</code></a>, which runs after the tool executes and can replace the output or trip a wire. I’m not suggesting Inspect should copy it — just that the shape recurs, and a sanctioned hook would fail closed by construction rather than by convention.</p></li>
+</ol>
+<p>If the answer is instead “curate the corpus; runtime filtering isn’t the model here”, that’s a good answer and worth stating explicitly, because it changes what people build rather than how.</p>
+</section>
+<section id="where-this-came-from" class="level2">
+<h2 class="anchored" data-anchor-id="where-this-came-from">Where this came from</h2>
+<p>I built a small point-in-time probe — an agent answering “as of” a cutoff date with retrieval restricted to sources published before it, to separate what a model can work out from what it already remembers. That turned up the Exa provider crash I filed as <a href="https://github.com/UKGovernmentBEIS/inspect_ai/issues/4911">#4911</a> and fixed in <a href="https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913">#4913</a>. This is the other thing it turned up.</p>
+<p>I’m not building a benchmark on this and I’m not proposing one — the probe was a few days’ work, and the question above is what it left behind.</p>
+</section>
+<section id="the-open-question" class="level2">
+<h2 class="anchored" data-anchor-id="the-open-question">The open question</h2>
+<p>Is <code>ToolSource</code> wrapping the intended pattern, something I’ve missed, or a sign that runtime filtering isn’t how Inspect expects this to be done? Any of those is a useful answer, and I’d rather build on the sanctioned thing than on a workaround I happened to find.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/raina-sid\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+<p>Siddharth Raina</p>
+</div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

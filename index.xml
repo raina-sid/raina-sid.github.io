@@ -1,0 +1,715 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>Siddharth Raina</title>
+<link>https://raina-sid.github.io/</link>
+<atom:link href="https://raina-sid.github.io/index.xml" rel="self" type="application/rss+xml"/>
+<description>Notes on LLM evaluation, model audit, and measurement validity.</description>
+<generator>quarto-1.10.18</generator>
+<lastBuildDate>Thu, 20 Aug 2026 22:00:00 GMT</lastBuildDate>
+<item>
+  <title>What’s the right way to filter tool outputs in Inspect?</title>
+  <link>https://raina-sid.github.io/posts/filtering-tool-outputs-in-inspect.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="the-claim" class="level2">
+<h2 class="anchored" data-anchor-id="the-claim">The claim</h2>
+<p>Every eval makes an implicit claim about what the model had access to. With a fixed dataset that claim is easy to keep — you shipped the data, so you know. Give an agent a live tool and the claim stops being a property of the task and becomes a property of the <strong>harness</strong>: it now depends on what the harness let through.</p>
+<p>Inspect has no sanctioned way to enforce that. Approval runs before the tool does and can only rewrite the <em>call</em>. Nothing sits between the result and the model. And the hook that looks like the right place <strong>fails open silently</strong> — if your filter raises, the model gets the unfiltered result and the run reports success.</p>
+<p>This post is about where that matters, what I tried, and what I think would help. The short version: I’ve been wrapping <code>ToolSource</code>, it works, and I’d like to know whether that’s the intended answer or whether I’m solving a problem Inspect deliberately doesn’t have.</p>
+</section>
+<section id="why-bound-tool-output-at-all" class="level2">
+<h2 class="anchored" data-anchor-id="why-bound-tool-output-at-all">Why bound tool output at all</h2>
+<ul>
+<li><strong>Eval integrity.</strong> Reference solutions, graders, hidden tests and answer keys have to stay out of tool responses. If an agent can reach them, the score measures retrieval rather than capability — and the result is not merely noisy, it is void. The July 2026 incident where models escaped a sandbox to reach benchmark material is the loud version of this; the quiet version is a search tool that happens to surface a writeup of the task.</li>
+<li><strong>Controlled-information evals.</strong> A large class of safety questions have the shape “what does the model do when it has <em>exactly</em> this information and no more?” — sandbagging and underperformance work, situational-awareness probes, scenarios testing whether an agent acts on material it should not have. The information boundary <em>is</em> the experimental condition.</li>
+<li><strong>Dangerous-capability elicitation.</strong> Sometimes you want the agent to have a realistic tool while specific content is withheld, and to measure whether it <em>tries</em> — which requires filtering the result, not blocking the call.</li>
+<li><strong>Contamination control.</strong> Temporal gating is one instance: dropping results dated after a decision point so a task is not trivially answerable from leaked future data.</li>
+</ul>
+<p>What these have in common is that they’re <strong>output-level</strong> — the call is legitimate, and it’s the <em>result</em> that needs bounding. They also want to fail closed: a control that silently doesn’t apply gives you a clean-looking result you can’t distinguish from a valid one, which seems worse than an error.</p>
+<p>That’s the part I couldn’t find a sanctioned answer for.</p>
+<p>What these share is that they’re <strong>output-level</strong>: the call is legitimate, and it’s the <em>result</em> that needs bounding. They also want to fail closed — a control that silently doesn’t apply gives you a clean-looking result you can’t distinguish from a valid one, which seems worse than an error.</p>
+</section>
+<section id="the-obvious-alternative-curate-the-corpus-instead" class="level2">
+<h2 class="anchored" data-anchor-id="the-obvious-alternative-curate-the-corpus-instead">The obvious alternative: curate the corpus instead</h2>
+<p>Before going further it’s worth saying that there’s a good answer to all of this which doesn’t need any framework support: <strong>don’t filter at runtime, control the corpus up front.</strong> Build the document set the agent can reach, serve only that, and the boundary is guaranteed by construction. Most <code>inspect_evals</code> tasks run on fixed datasets; <code>agentdojo</code> goes further and simulates the tool backends entirely; sandboxes default to <code>network_mode: none</code>. If your eval fits that shape, curation is strictly better than filtering — fewer moving parts, and nothing to fail open.</p>
+<p>I think it stops fitting in four places, and I’d be glad to be wrong about any of them.</p>
+<p><strong>Eval-awareness.</strong> A conspicuously synthetic corpus is a tell. A model that infers it is being evaluated may behave differently — which is exactly the effect a lot of safety evals are trying to measure without contaminating. A real tool returning a filtered result is a smaller tell than an obviously fabricated document set. This is a hypothesis rather than something I’ve measured, but it seems like the case where curation is most costly.</p>
+<p><strong>External validity of the tool.</strong> If part of what you’re measuring is how an agent copes with noisy, contradictory or partly-wrong results, a clean curated corpus has removed the phenomenon.</p>
+<p><strong>Open-ended browsing.</strong> Once an agent can follow a link, curation means the transitive closure of whatever it can reach. That isn’t expensive so much as undefined.</p>
+<p><strong>Third-party services you don’t control.</strong> A live database, a code-execution backend, someone else’s MCP server. You can’t curate its responses. Filtering them is the only lever.</p>
+<p>None of this makes curation wrong — it makes it a different point on a trade-off. And if the answer is that Inspect is deliberately aimed at the curated end, that’s worth knowing explicitly, because it changes what you build rather than how you build it.</p>
+</section>
+<section id="what-i-found" class="level2">
+<h2 class="anchored" data-anchor-id="what-i-found">What I found</h2>
+<p><strong>Approval is call-only.</strong> <code>Approval.modified</code> is <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/approval/_approval.py#L25"><code>ToolCall | None</code></a>, and the <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/approval/_approver.py#L12-L17"><code>Approver</code> signature</a> takes <code>(message, call, view, history)</code> — the result doesn’t exist yet when an approver runs.</p>
+<p><strong>Nothing sits between execution and the model.</strong> The <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/model/_call_tools.py#L687">result is returned unmediated</a>, apart from size truncation.</p>
+<p><strong>Wrapping <code>ToolSource</code> does work.</strong> Re-wrapping each <code>ToolDef</code> so the wrapper awaits the inner tool and filters the result before returning it gives an output-level control that fails closed, and it composes over MCP servers since <code>MCPServer</code> subclasses <code>ToolSource</code>. That’s what I’ve been using. I couldn’t find this pattern documented, hence the question.</p>
+</section>
+<section id="the-one-i-tried-first-on_before_model_generate" class="level2">
+<h2 class="anchored" data-anchor-id="the-one-i-tried-first-on_before_model_generate">The one I tried first: <code>on_before_model_generate</code></h2>
+<p>This is the hook I reached for first, and I don’t think I’d be the only one. <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/docs/extensions-hooks.qmd#L90"><code>docs/extensions-hooks.qmd:90</code></a> says mutating inputs there “is explicitly supported and intended”, and <code>data.input</code> does flow into the provider call — so it reads like the sanctioned place to transform what the model sees.</p>
+<p>Three paragraphs later, <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/docs/extensions-hooks.qmd#L93">line 93</a> notes that “any exception raised by a hook is caught and logged as a warning (it does not fail the run)”, implemented at <a href="https://github.com/UKGovernmentBEIS/inspect_ai/blob/331e2b0/src/inspect_ai/hooks/_hooks.py#L1094-L1104"><code>_hooks.py:1094-1104</code></a>.</p>
+<p><strong>Both facts are documented; they’re just never connected.</strong> Composed, they mean a filter implemented as a hook <strong>fails open silently</strong> — the model receives unfiltered input and the run reports success. Repro on <code>inspect-ai==0.3.258</code> (no API key; mechanism identical at <code>main</code> <code>331e2b0</code>):</p>
+<pre><code>[GATE RAISES]   status=success   hook raised=True   SECRET reached model=True
+                warning: Exception calling hook 'RedactionGate': gate failed: filter raised before redacting
+[GATE REDACTS]  status=success   hook raised=False  SECRET reached model=False</code></pre>
+<p>The second arm — same hook, mutating in place instead of raising — confirms the mechanism works. So the first arm is a <em>silent</em> failure, not a broken hook.</p>
+<p>I’m not suggesting hooks should propagate exceptions; a crashing observer shouldn’t abort a run, and that’s clearly deliberate. The narrow point is that the “explicitly supported and intended” line reads as an invitation to build controls there, and the consequence isn’t stated next to it.</p>
+<details>
+<summary>
+Full repro (<code>python fail_open_repro.py</code>, no API key)
+</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">"""</span></span>
+<span id="cb2-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">Fail-open demonstration for Inspect's on_before_model_generate hook.</span></span>
+<span id="cb2-3"></span>
+<span id="cb2-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">Claim: a data-access gate implemented as an `on_before_model_generate` hook</span></span>
+<span id="cb2-5"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(the pattern the docs bless: "mutate data.input") SILENTLY FAILS OPEN. If the</span></span>
+<span id="cb2-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">gate raises, Inspect's `_emit_to_all` swallows the exception to a</span></span>
+<span id="cb2-7"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">`logger.warning` and the eval CONTINUES with the model receiving the</span></span>
+<span id="cb2-8"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">UNREDACTED input. The run reports success. Nothing signals the control was skipped.</span></span>
+<span id="cb2-9"></span>
+<span id="cb2-10"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">Run against installed inspect_ai 0.3.258; mechanism verified identical at main @ 331e2b0</span></span>
+<span id="cb2-11"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(2026-08-20):</span></span>
+<span id="cb2-12"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">  - _emit_to_all  src/inspect_ai/hooks/_hooks.py:1094-1104  (L1101-1102 re-raises</span></span>
+<span id="cb2-13"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">                  LimitExceededError; L1103-1104 swallows everything else to</span></span>
+<span id="cb2-14"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">                  logger.warning) -&gt; hook exceptions are swallowed.</span></span>
+<span id="cb2-15"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">  - dispatch      _hooks.py:894  on_before_model_generate</span></span>
+<span id="cb2-16"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">  - BeforeModelGenerate.input is the SAME list object later sent to the provider</span></span>
+<span id="cb2-17"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">    (_model.py:1291), so an in-place mutation flows through -- proving the gate</span></span>
+<span id="cb2-18"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">    CAN work; the failure is specifically the silent one.</span></span>
+<span id="cb2-19"></span>
+<span id="cb2-20"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">Two arms:</span></span>
+<span id="cb2-21"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">  RAISE  -&gt; gate raises before redacting  -&gt; secret REACHES the model, run succeeds.</span></span>
+<span id="cb2-22"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">  REDACT -&gt; gate mutates input in place    -&gt; secret is removed (mechanism works).</span></span>
+<span id="cb2-23"></span>
+<span id="cb2-24"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">Run:  python fail_open_repro.py     (no API key needed; uses mockllm/model)</span></span>
+<span id="cb2-25"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">"""</span></span>
+<span id="cb2-26"></span>
+<span id="cb2-27"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> logging</span>
+<span id="cb2-28"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> tempfile</span>
+<span id="cb2-29"></span>
+<span id="cb2-30"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> inspect_ai <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> Task, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">eval</span>, task</span>
+<span id="cb2-31"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> inspect_ai.dataset <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> Sample</span>
+<span id="cb2-32"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> inspect_ai.hooks <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> BeforeModelGenerate, Hooks, hooks</span>
+<span id="cb2-33"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">from</span> inspect_ai.solver <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> generate</span>
+<span id="cb2-34"></span>
+<span id="cb2-35">SECRET <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"SECRET-DATA-AFTER-CUTOFF"</span></span>
+<span id="cb2-36"></span>
+<span id="cb2-37"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Behaviour toggle, read at hook-call time. Set by run_arm() below.</span></span>
+<span id="cb2-38">GATE_MODE <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"raise"</span></span>
+<span id="cb2-39"></span>
+<span id="cb2-40"></span>
+<span id="cb2-41"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">@hooks</span>(name<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"redaction_gate"</span>, description<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Redacts SECRET from model input (fail-open demo)"</span>)</span>
+<span id="cb2-42"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">class</span> RedactionGate(Hooks):</span>
+<span id="cb2-43">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">async</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> on_before_model_generate(<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">self</span>, data: BeforeModelGenerate) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-&gt;</span> <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">None</span>:</span>
+<span id="cb2-44">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> GATE_MODE <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"raise"</span>:</span>
+<span id="cb2-45">            <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># A realistic filter failure: an exception before redaction completes.</span></span>
+<span id="cb2-46">            <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">raise</span> <span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">RuntimeError</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gate failed: filter raised before redacting"</span>)</span>
+<span id="cb2-47">        <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Correct usage: mutate the shared message objects IN PLACE.</span></span>
+<span id="cb2-48">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> msg <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> data.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">input</span>:</span>
+<span id="cb2-49">            <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">isinstance</span>(msg.content, <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">str</span>) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">and</span> SECRET <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> msg.content:</span>
+<span id="cb2-50">                msg.content <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> msg.content.replace(SECRET, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"[REDACTED]"</span>)</span>
+<span id="cb2-51"></span>
+<span id="cb2-52"></span>
+<span id="cb2-53"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">@task</span></span>
+<span id="cb2-54"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> leak_task():</span>
+<span id="cb2-55">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> Task(</span>
+<span id="cb2-56">        dataset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>[Sample(<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">input</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"Here is confidential material: </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>SECRET<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">. Summarize it."</span>)],</span>
+<span id="cb2-57">        solver<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>generate(),</span>
+<span id="cb2-58">    )</span>
+<span id="cb2-59"></span>
+<span id="cb2-60"></span>
+<span id="cb2-61"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">class</span> WarningCatcher(logging.Handler):</span>
+<span id="cb2-62">    <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">__init__</span>(<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">self</span>):</span>
+<span id="cb2-63">        <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">super</span>().<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">__init__</span>(level<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>logging.WARNING)</span>
+<span id="cb2-64">        <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">self</span>.records <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> []</span>
+<span id="cb2-65"></span>
+<span id="cb2-66">    <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> emit(<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">self</span>, record):</span>
+<span id="cb2-67">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Exception calling hook"</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> record.getMessage():</span>
+<span id="cb2-68">            <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">self</span>.records.append(record.getMessage())</span>
+<span id="cb2-69"></span>
+<span id="cb2-70"></span>
+<span id="cb2-71"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> model_input_text(log):</span>
+<span id="cb2-72">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">"""Extract the input the model actually received, from the ModelEvent."""</span></span>
+<span id="cb2-73">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> sample <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> log.samples <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">or</span> []:</span>
+<span id="cb2-74">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> ev <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> sample.events <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">or</span> []:</span>
+<span id="cb2-75">            <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">getattr</span>(ev, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"event"</span>, <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">None</span>) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"model"</span>:</span>
+<span id="cb2-76">                <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">str</span>(ev.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">input</span>)</span>
+<span id="cb2-77">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"&lt;no model event found&gt;"</span></span>
+<span id="cb2-78"></span>
+<span id="cb2-79"></span>
+<span id="cb2-80"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> run_arm(mode):</span>
+<span id="cb2-81">    <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">global</span> GATE_MODE</span>
+<span id="cb2-82">    GATE_MODE <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> mode</span>
+<span id="cb2-83"></span>
+<span id="cb2-84">    catcher <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> WarningCatcher()</span>
+<span id="cb2-85">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># inspect_ai sets propagate=False on its package logger and installs its own</span></span>
+<span id="cb2-86">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># handler (see _util/logger.py), so attach directly to that logger.</span></span>
+<span id="cb2-87">    pkg_logger <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> logging.getLogger(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"inspect_ai"</span>)</span>
+<span id="cb2-88">    pkg_logger.addHandler(catcher)</span>
+<span id="cb2-89">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> pkg_logger.level <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&gt;</span> logging.WARNING <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">or</span> pkg_logger.level <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> logging.NOTSET:</span>
+<span id="cb2-90">        pkg_logger.setLevel(logging.WARNING)</span>
+<span id="cb2-91">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">try</span>:</span>
+<span id="cb2-92">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">with</span> tempfile.TemporaryDirectory() <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> d:</span>
+<span id="cb2-93">            logs <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">eval</span>(leak_task(), model<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mockllm/model"</span>, display<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"none"</span>, log_dir<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>d)</span>
+<span id="cb2-94">            log <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> logs[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>]</span>
+<span id="cb2-95">            <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Extract while the log dir still exists (samples are read lazily).</span></span>
+<span id="cb2-96">            seen <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> model_input_text(log)</span>
+<span id="cb2-97">            status <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> log.status</span>
+<span id="cb2-98">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">finally</span>:</span>
+<span id="cb2-99">        pkg_logger.removeHandler(catcher)</span>
+<span id="cb2-100"></span>
+<span id="cb2-101">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> {</span>
+<span id="cb2-102">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"status"</span>: status,</span>
+<span id="cb2-103">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"hook_raised"</span>: <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">len</span>(catcher.records) <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&gt;</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb2-104">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"warning"</span>: catcher.records[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>] <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> catcher.records <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">else</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"(none)"</span>,</span>
+<span id="cb2-105">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"secret_reached_model"</span>: SECRET <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> seen,</span>
+<span id="cb2-106">    }</span>
+<span id="cb2-107"></span>
+<span id="cb2-108"></span>
+<span id="cb2-109"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">__name__</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"__main__"</span>:</span>
+<span id="cb2-110">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"="</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">78</span>)</span>
+<span id="cb2-111">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Inspect on_before_model_generate — fail-open demonstration"</span>)</span>
+<span id="cb2-112">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"="</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">78</span>)</span>
+<span id="cb2-113">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> mode, label <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> [</span>
+<span id="cb2-114">        (<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"raise"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"GATE RAISES (filter fails)"</span>),</span>
+<span id="cb2-115">        (<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"redact"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"GATE REDACTS (works)"</span>),</span>
+<span id="cb2-116">    ]:</span>
+<span id="cb2-117">        r <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> run_arm(mode)</span>
+<span id="cb2-118">        <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">\n</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">[</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>label<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">]  mode=</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>mode<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">!r}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span>
+<span id="cb2-119">        <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"  eval status ............ </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>r[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'status'</span>]<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span>
+<span id="cb2-120">        <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"  hook raised ............ </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>r[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'hook_raised'</span>]<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span>
+<span id="cb2-121">        <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"  warning logged ......... </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>r[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'warning'</span>]<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span>
+<span id="cb2-122">        <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"  SECRET reached model ... </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>r[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'secret_reached_model'</span>]<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span>
+<span id="cb2-123">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"="</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">78</span>)</span>
+<span id="cb2-124">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"If the RAISE arm shows: status=success, hook raised=True, SECRET reached=True,"</span>)</span>
+<span id="cb2-125">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"then the gate failed open silently — the eval passed with the control skipped."</span>)</span>
+<span id="cb2-126">    <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">print</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"="</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">78</span>)</span></code></pre></div></div>
+</details>
+</section>
+<section id="what-id-suggest" class="level2">
+<h2 class="anchored" data-anchor-id="what-id-suggest">What I’d suggest</h2>
+<p>In rough order of how much I’d be asking for:</p>
+<ol type="1">
+<li><p><strong>A one-line cross-reference in the hooks docs.</strong> <code>extensions-hooks.qmd:90</code> blesses mutating <code>data.input</code>; line 93 notes hook exceptions are swallowed. Both are true and three paragraphs apart. A pointer from the first to the second — “hooks are observers and fail open, so don’t use them for correctness-critical filtering” — would have saved me the detour. <strong>Happy to PR this today if it’s wanted.</strong></p></li>
+<li><p><strong>A documented answer on the intended pattern.</strong> If <code>ToolSource</code> wrapping is it, saying so in the tools docs makes it discoverable; <code>tools-custom.qmd</code> currently covers <code>tool_with()</code>, <code>ToolDef</code> and error handling but nothing about transforming a result. Also happy to PR.</p></li>
+<li><p><strong>Only if there’s appetite: a first-class, fail-closed output interception point.</strong> The OpenAI Agents SDK has <a href="https://openai.github.io/openai-agents-python/guardrails/"><code>@tool_output_guardrail</code></a>, which runs after the tool executes and can replace the output or trip a wire. I’m not suggesting Inspect should copy it — just that the shape recurs, and a sanctioned hook would fail closed by construction rather than by convention.</p></li>
+</ol>
+<p>If the answer is instead “curate the corpus; runtime filtering isn’t the model here”, that’s a good answer and worth stating explicitly, because it changes what people build rather than how.</p>
+</section>
+<section id="where-this-came-from" class="level2">
+<h2 class="anchored" data-anchor-id="where-this-came-from">Where this came from</h2>
+<p>I built a small point-in-time probe — an agent answering “as of” a cutoff date with retrieval restricted to sources published before it, to separate what a model can work out from what it already remembers. That turned up the Exa provider crash I filed as <a href="https://github.com/UKGovernmentBEIS/inspect_ai/issues/4911">#4911</a> and fixed in <a href="https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913">#4913</a>. This is the other thing it turned up.</p>
+<p>I’m not building a benchmark on this and I’m not proposing one — the probe was a few days’ work, and the question above is what it left behind.</p>
+</section>
+<section id="the-open-question" class="level2">
+<h2 class="anchored" data-anchor-id="the-open-question">The open question</h2>
+<p>Is <code>ToolSource</code> wrapping the intended pattern, something I’ve missed, or a sign that runtime filtering isn’t how Inspect expects this to be done? Any of those is a useful answer, and I’d rather build on the sanctioned thing than on a workaround I happened to find.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>evals</category>
+  <category>inspect</category>
+  <category>tooling</category>
+  <guid>https://raina-sid.github.io/posts/filtering-tool-outputs-in-inspect.html</guid>
+  <pubDate>Thu, 20 Aug 2026 22:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>

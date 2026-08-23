@@ -1,0 +1,5 @@
+/* Restrained defaults: readable measure, calm code blocks. */
+body { font-size: 1.02rem; }
+main { max-width: 46rem; }
+pre { font-size: 0.86rem; }
+blockquote { border-left: 3px solid #d0d7de; color: #444; }
