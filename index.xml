@@ -702,12 +702,6 @@ background-color: null;
 font-style: inherit;">78</span>)</span></code></pre></div></div>
 </details>
 </section>
-<section id="related-work-the-general-case-has-been-measured" class="level2">
-<h2 class="anchored" data-anchor-id="related-work-the-general-case-has-been-measured">Related work: the general case has been measured</h2>
-<p>After writing this I found <a href="https://arxiv.org/abs/2607.14166"><em>Stop Means Stop: Measuring and Repairing the Enforcement Gap in Agent-Framework Control Primitives</em></a> (SOUNDGATE, July 2026), which makes the general version of the point far more rigorously than I have. Their framing is better than mine: control primitives ship with “names and documentation [that] imply barrier semantics”, and that contract “holds on <strong>none of six</strong> widely used open-source frameworks”. They find frontier models emit the leak-triggering plan shape at rates up to 14%, and 215 of 1,200 live runs leaked.</p>
-<p>Two things make this an adjacent finding rather than the same one. Their six are LangGraph, LlamaIndex Workflows, Microsoft Agent Framework, the OpenAI Agents SDK, CrewAI and LangGraph.js — chosen by execution model rather than popularity, and Inspect isn’t among them. And their failures are <em>pre-execution</em> and concurrency-shaped: an approval gate suspends its own branch while a sibling’s effect runs during the pause, plus replay double-execution and timeout zombies. What I hit is post-execution and much duller — an observer hook that swallows exceptions, so a filter that raises simply doesn’t run.</p>
-<p>Their remedy is worth noting for the third suggestion above: an <strong>environment-external</strong> gate through which every side effect must be admitted, on the argument that in-framework primitives can’t be relied on for complete mediation. If that’s right in general, it’s an argument that a correctness-critical control shouldn’t live in a hook at all — which is roughly what the repro below demonstrates from the other direction.</p>
-</section>
 <section id="what-id-suggest" class="level2">
 <h2 class="anchored" data-anchor-id="what-id-suggest">What I’d suggest</h2>
 <p>In rough order of how much I’d be asking for:</p>
