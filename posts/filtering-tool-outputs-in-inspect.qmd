@@ -12,10 +12,10 @@ claim is easy to keep — you shipped the data, so you know. Give an agent a liv
 stops being a property of the task and becomes a property of the **harness**: it now depends on
 what the harness let through.
 
-Inspect has no sanctioned way to enforce that. Approval runs before the tool does and can only
-rewrite the *call*. Nothing sits between the result and the model. And the hook that looks like the
-right place **fails open silently** — if your filter raises, the model gets the unfiltered result
-and the run reports success.
+Inspect has no dedicated mechanism for this. Approval runs before the tool does and can only
+rewrite the *call*. Nothing documented sits between the result and the model. And the hook that
+looks like the right place **fails open silently** — if your filter raises, the model gets the
+unfiltered result and the run reports success.
 
 This post is about where that matters, what I tried, and what I think would help. The short
 version: I've been wrapping `ToolSource`, it works, and I'd like to know whether that's the
@@ -25,9 +25,10 @@ intended answer or whether I'm solving a problem Inspect deliberately doesn't ha
 
 - **Eval integrity.** Reference solutions, graders, hidden tests and answer keys have to stay out
   of tool responses. If an agent can reach them, the score measures retrieval rather than
-  capability — and the result is not merely noisy, it is void. The July 2026 incident where models
-  escaped a sandbox to reach benchmark material is the loud version of this; the quiet version is a
-  search tool that happens to surface a writeup of the task.
+  capability — and the result is not merely noisy, it is void. A capable agent will route around
+  controls it can see, so the boundary has to hold *outside* the agent's reach, not by instruction;
+  the quiet version of the same failure is mundane — a search tool that happens to surface a
+  writeup of the task.
 - **Controlled-information evals.** A large class of safety questions have the shape "what does
   the model do when it has *exactly* this information and no more?" — sandbagging and
   underperformance work, situational-awareness probes, scenarios testing whether an agent acts on
@@ -44,11 +45,6 @@ gives you a clean-looking result you can't distinguish from a valid one, which s
 error.
 
 That's the part I couldn't find a sanctioned answer for.
-
-
-What these share is that they're **output-level**: the call is legitimate, and it's the *result*
-that needs bounding. They also want to fail closed — a control that silently doesn't apply gives
-you a clean-looking result you can't distinguish from a valid one, which seems worse than an error.
 
 ## The obvious alternative: curate the corpus instead
 
@@ -115,9 +111,30 @@ reports success. Repro on `inspect-ai==0.3.258` (no API key; mechanism identical
 `331e2b0`):
 
 ```
-[GATE RAISES]   status=success   hook raised=True   SECRET reached model=True
-                warning: Exception calling hook 'RedactionGate': gate failed: filter raised before redacting
-[GATE REDACTS]  status=success   hook raised=False  SECRET reached model=False
+==============================================================================
+Inspect on_before_model_generate — fail-open demonstration
+==============================================================================
+inspect_ai v0.3.258
+- hooks enabled: 1
+  redaction_gate: Redacts SECRET from model input (fail-open demo)
+
+
+[GATE RAISES (filter fails)]  mode='raise'
+  eval status ............ success
+  hook raised ............ True
+  warning logged ......... Exception calling hook 'RedactionGate': gate failed: filter raised before redacting
+  SECRET reached model ... True
+
+[GATE REDACTS (works)]  mode='redact'
+  eval status ............ success
+  hook raised ............ False
+  warning logged ......... (none)
+  SECRET reached model ... False
+
+==============================================================================
+If the RAISE arm shows: status=success, hook raised=True, SECRET reached=True,
+then the gate failed open silently — the eval passed with the control skipped.
+==============================================================================
 ```
 
 The second arm — same hook, mutating in place instead of raising — confirms the mechanism works.
