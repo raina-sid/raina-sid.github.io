@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "Writing",
     "section": "",
-    "text": "Notes on LLM evaluation, model audit, and measurement validity — mostly things I ran into while building evals and reading the tools’ source.\n\n\n\n\n\n\n\n\n\nWhat’s the right way to filter tool outputs in Inspect?\n\n\nI went looking for a sanctioned way to filter what a tool returns, and couldn’t find one. Notes on what I tried, a hook that fails open silently, and the pattern I settled on.\n\n\n\n\n\nAug 21, 2026\n\n12 min\n\n\n\n\nNo matching items"
+    "text": "Notes on LLM evaluation and measurement validity, from building evals and reading the source.\n\n\n\n\n\n\n\n\n\nWhat’s the right way to filter tool outputs in Inspect?\n\n\nI went looking for a sanctioned way to filter what a tool returns, and couldn’t find one. Notes on what I tried, a hook that fails open silently, and the pattern I settled on.\n\n\n\n\n\nAug 21, 2026\n\n12 min\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "posts/filtering-tool-outputs-in-inspect.html",
