@@ -277,30 +277,6 @@ if __name__ == "__main__":
 
 </details>
 
-## Related work: the general case has been measured
-
-After writing this I found [*Stop Means Stop: Measuring and Repairing the Enforcement Gap in
-Agent-Framework Control Primitives*](https://arxiv.org/abs/2607.14166) (SOUNDGATE, July 2026),
-which makes the general version of the point far more rigorously than I have. Their framing is
-better than mine: control primitives ship with "names and documentation [that] imply barrier
-semantics", and that contract "holds on **none of six** widely used open-source frameworks". They
-find frontier models emit the leak-triggering plan shape at rates up to 14%, and 215 of 1,200 live
-runs leaked.
-
-Two things make this an adjacent finding rather than the same one. Their six are LangGraph,
-LlamaIndex Workflows, Microsoft Agent Framework, the OpenAI Agents SDK, CrewAI and LangGraph.js —
-chosen by execution model rather than popularity, and Inspect isn't among them. And their failures
-are *pre-execution* and concurrency-shaped: an approval gate suspends its own branch while a
-sibling's effect runs during the pause, plus replay double-execution and timeout zombies. What I
-hit is post-execution and much duller — an observer hook that swallows exceptions, so a filter that
-raises simply doesn't run.
-
-Their remedy is worth noting for the third suggestion above: an **environment-external** gate
-through which every side effect must be admitted, on the argument that in-framework primitives
-can't be relied on for complete mediation. If that's right in general, it's an argument that a
-correctness-critical control shouldn't live in a hook at all — which is roughly what the repro
-below demonstrates from the other direction.
-
 ## What I'd suggest
 
 In rough order of how much I'd be asking for:
