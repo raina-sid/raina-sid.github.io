@@ -15,9 +15,13 @@ website:
   page-footer:
     center: "Siddharth Raina"
   # Link previews. Without these, shares on LinkedIn/Slack/X render as a bare URL.
-  open-graph: true
+  open-graph:
+    image: /og-card.png
+    image-width: 1200
+    image-height: 630
   twitter-card:
-    card-style: summary
+    card-style: summary_large_image
+    image: /og-card.png
 
 format:
   html:
