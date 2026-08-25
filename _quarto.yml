@@ -4,7 +4,7 @@ project:
 
 website:
   title: "Siddharth Raina"
-  description: "Notes on LLM evaluation, model audit, and measurement validity."
+  description: "Notes on evaluating AI systems, and whether the results mean what they claim."
   site-url: "https://raina-sid.github.io"
   navbar:
     right:
@@ -14,6 +14,10 @@ website:
         href: https://github.com/raina-sid
   page-footer:
     center: "Siddharth Raina"
+  # Link previews. Without these, shares on LinkedIn/Slack/X render as a bare URL.
+  open-graph: true
+  twitter-card:
+    card-style: summary
 
 format:
   html:
