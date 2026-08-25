@@ -8,7 +8,7 @@
 <title>Siddharth Raina</title>
 <link>https://raina-sid.github.io/</link>
 <atom:link href="https://raina-sid.github.io/index.xml" rel="self" type="application/rss+xml"/>
-<description>Notes on LLM evaluation, model audit, and measurement validity.</description>
+<description>Notes on evaluating AI systems, and whether the results mean what they claim.</description>
 <generator>quarto-1.10.18</generator>
 <lastBuildDate>Thu, 20 Aug 2026 22:00:00 GMT</lastBuildDate>
 <item>
