@@ -6,14 +6,17 @@ website:
   title: "Siddharth Raina"
   description: "Notes on LLM evaluation, model audit, and measurement validity."
   site-url: "https://raina-sid.github.io"
-  # Drafts (`draft: true` in a post's front matter) render in full so they can be previewed
-  # and shared for review, but stay out of listings and the nav. Quarto's default draft-mode
-  # is `gone`, which emits an empty 90-byte HTML shell -- it looks like a broken render.
-  draft-mode: unlinked
+  # Drafts (`draft: true` in a post's front matter) are NOT published: `gone` makes Quarto emit
+  # an empty HTML shell, so draft content never reaches the live site. Switch to `unlinked`
+  # locally to preview a draft in full -- but switch back BEFORE publishing, because
+  # `unlinked` renders the draft at a real (if unlisted) URL.
+  draft-mode: gone
   navbar:
     right:
       - text: Writing
         href: index.qmd
+      - text: About
+        href: about.qmd
       - icon: github
         href: https://github.com/raina-sid
   page-footer:

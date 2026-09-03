@@ -1,0 +1,32 @@
+---
+title: "About"
+---
+
+I'm a data scientist with over a decade in industry, based in Berlin. Most of it has been forecasting and
+recommender systems in production — measuring systems whose output is stochastic, where the metric is
+easy to compute and what it licenses you to say is not.
+
+This site is where I write up work on **LLM evaluation and measurement validity**: what an eval harness
+can actually control, where a benchmark's number stops carrying information, and how to tell those
+apart. The recurring theme is that agentic evals make implicit claims about what a model had access to,
+and those claims are properties of the harness rather than of the task.
+
+## Things I've done in the open
+
+- **A merged contribution to [`inspect_ai`](https://github.com/UKGovernmentBEIS/inspect_ai)**, the
+  eval framework maintained by the UK AI Security Institute
+  ([PR #4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913)), plus an open question on
+  whether runtime filtering of tool outputs is in scope
+  ([#5020](https://github.com/UKGovernmentBEIS/inspect_ai/issues/5020)).
+- **[Notes on filtering tool outputs in Inspect](posts/filtering-tool-outputs-in-inspect.qmd)** —
+  where the framework can and cannot intercept a tool response, and a hook that fails open silently.
+- Ongoing: measuring whether published agentic-safety evals still discriminate on current models —
+  replication first, write-up only if the numbers hold up.
+
+## Elsewhere
+
+- GitHub: [raina-sid](https://github.com/raina-sid)
+- LinkedIn: [sidraina89](https://www.linkedin.com/in/sidraina89/)
+- Email: [sidraina89@gmail.com](mailto:sidraina89@gmail.com)
+
+If you think something here is wrong, I'd like to know.
