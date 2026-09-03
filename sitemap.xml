@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://raina-sid.github.io/index.html</loc>
-    <lastmod>2026-08-24T18:08:06.760Z</lastmod>
+    <loc>https://raina-sid.github.io/about.html</loc>
+    <lastmod>2026-09-03T19:18:22.301Z</lastmod>
   </url>
   <url>
     <loc>https://raina-sid.github.io/posts/filtering-tool-outputs-in-inspect.html</loc>
-    <lastmod>2026-08-24T17:57:37.633Z</lastmod>
+    <lastmod>2026-08-24T08:57:46.152Z</lastmod>
+  </url>
+  <url>
+    <loc>https://raina-sid.github.io/index.html</loc>
+    <lastmod>2026-08-24T08:34:05.194Z</lastmod>
   </url>
 </urlset>

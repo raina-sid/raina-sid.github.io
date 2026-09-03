@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Writing – Siddharth Raina</title>
+<title>About – Siddharth Raina</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -36,8 +36,6 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-listing/list.min.js"></script>
-<script src="site_libs/quarto-listing/quarto-listing.js"></script>
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -75,68 +73,10 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
-<script>
 
-  window.document.addEventListener("DOMContentLoaded", function (_event) {
-    const listingTargetEl = window.document.querySelector('#listing-listing .list');
-    if (!listingTargetEl) {
-      // No listing discovered, do not attach.
-      return; 
-    }
-
-    const options = {
-      valueNames: ['listing-date','listing-title','listing-description','listing-reading-time',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
-      
-      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description"],
-    };
-
-    window['quarto-listings'] = window['quarto-listings'] || {};
-    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
-
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  });
-
-  window.addEventListener('hashchange',() => {
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  })
-  </script>
-
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
 
 <link rel="stylesheet" href="styles.css">
-<link rel="alternate" type="application/rss+xml" title="Siddharth Raina" href="index.xml" data-external="1"></head>
+</head>
 
 <body class="nav-fixed quarto-light">
 
@@ -156,11 +96,11 @@ window.Quarto = {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Writing</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./about.html"> 
+    <a class="nav-link active" href="./about.html" aria-current="page"> 
 <span class="menu-text">About</span></a>
   </li>  
   <li class="nav-item compact">
@@ -176,23 +116,30 @@ window.Quarto = {
     </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#things-ive-done-in-the-open" id="toc-things-ive-done-in-the-open" class="nav-link active" data-scroll-target="#things-ive-done-in-the-open">Things I’ve done in the open</a></li>
+  <li><a href="#elsewhere" id="toc-elsewhere" class="nav-link" data-scroll-target="#elsewhere">Elsewhere</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
+<main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Writing</h1>
+<h1 class="title">About</h1>
 </div>
 
 
 
-<div class="quarto-title-meta column-page">
+<div class="quarto-title-meta">
 
     
   
@@ -204,34 +151,29 @@ window.Quarto = {
 </header>
 
 
-<p>Notes on LLM evaluation, model audit, and measurement validity — mostly things I ran into while building evals and reading the tools’ source.</p>
+<p>I’m a data scientist with over a decade in industry, based in Berlin. Most of it has been forecasting and recommender systems in production — measuring systems whose output is stochastic, where the metric is easy to compute and what it licenses you to say is not.</p>
+<p>This site is where I write up work on <strong>LLM evaluation and measurement validity</strong>: what an eval harness can actually control, where a benchmark’s number stops carrying information, and how to tell those apart. The recurring theme is that agentic evals make implicit claims about what a model had access to, and those claims are properties of the harness rather than of the task.</p>
+<section id="things-ive-done-in-the-open" class="level2">
+<h2 class="anchored" data-anchor-id="things-ive-done-in-the-open">Things I’ve done in the open</h2>
+<ul>
+<li><strong>A merged contribution to <a href="https://github.com/UKGovernmentBEIS/inspect_ai"><code>inspect_ai</code></a></strong>, the eval framework maintained by the UK AI Security Institute (<a href="https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913">PR #4913</a>), plus an open question on whether runtime filtering of tool outputs is in scope (<a href="https://github.com/UKGovernmentBEIS/inspect_ai/issues/5020">#5020</a>).</li>
+<li><strong><a href="./posts/filtering-tool-outputs-in-inspect.html">Notes on filtering tool outputs in Inspect</a></strong> — where the framework can and cannot intercept a tool response, and a hook that fails open silently.</li>
+<li>Ongoing: measuring whether published agentic-safety evals still discriminate on current models — replication first, write-up only if the numbers hold up.</li>
+</ul>
+</section>
+<section id="elsewhere" class="level2">
+<h2 class="anchored" data-anchor-id="elsewhere">Elsewhere</h2>
+<ul>
+<li>GitHub: <a href="https://github.com/raina-sid">raina-sid</a></li>
+<li>LinkedIn: <a href="https://www.linkedin.com/in/sidraina89/">sidraina89</a></li>
+<li>Email: <a href="mailto:sidraina89@gmail.com">sidraina89@gmail.com</a></li>
+</ul>
+<p>If you think something here is wrong, I’d like to know.</p>
 
 
+</section>
 
-
-<div class="quarto-listing quarto-listing-container-default" id="listing-listing">
-<div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="ZXZhbHMlMkNpbnNwZWN0JTJDdG9vbGluZw==" data-listing-date-sort="1787263200000" data-listing-file-modified-sort="1787561866152" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2397">
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./posts/filtering-tool-outputs-in-inspect.html" class="no-external">What’s the right way to filter tool outputs in Inspect?</a>
-</h3>
-<div class="delink listing-description"><a href="./posts/filtering-tool-outputs-in-inspect.html" class="no-external">
-<p>I went looking for a sanctioned way to filter what a tool returns, and couldn’t find one. Notes on what I tried, a hook that fails open silently, and the pattern I settled on.</p>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./posts/filtering-tool-outputs-in-inspect.html" class="no-external">
-<div class="listing-date">
-Aug 21, 2026
-</div>
-<div class="listing-reading-time">12 min</div>
-</a>
-</div>
-</div>
-</div>
-<div class="listing-no-matching d-none">No matching items</div>
-</div></main> <!-- /main -->
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";

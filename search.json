@@ -1,10 +1,24 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Writing",
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
     "section": "",
-    "text": "Notes on evaluating AI systems, and whether the results mean what they claim.\n\n\n\n\n\n\n\n\n\nWhat’s the right way to filter tool outputs in Inspect?\n\n\nI went looking for a sanctioned way to filter what a tool returns, and couldn’t find one. Notes on what I tried, a hook that fails open silently, and the pattern I settled on.\n\n\n\n\n\nAug 21, 2026\n\n12 min\n\n\n\n\nNo matching items"
+    "text": "I’m a data scientist with over a decade in industry, based in Berlin. Most of it has been forecasting and recommender systems in production — measuring systems whose output is stochastic, where the metric is easy to compute and what it licenses you to say is not.\nThis site is where I write up work on LLM evaluation and measurement validity: what an eval harness can actually control, where a benchmark’s number stops carrying information, and how to tell those apart. The recurring theme is that agentic evals make implicit claims about what a model had access to, and those claims are properties of the harness rather than of the task."
+  },
+  {
+    "objectID": "about.html#things-ive-done-in-the-open",
+    "href": "about.html#things-ive-done-in-the-open",
+    "title": "About",
+    "section": "Things I’ve done in the open",
+    "text": "Things I’ve done in the open\n\nA merged contribution to inspect_ai, the eval framework maintained by the UK AI Security Institute (PR #4913), plus an open question on whether runtime filtering of tool outputs is in scope (#5020).\nNotes on filtering tool outputs in Inspect — where the framework can and cannot intercept a tool response, and a hook that fails open silently.\nOngoing: measuring whether published agentic-safety evals still discriminate on current models — replication first, write-up only if the numbers hold up."
+  },
+  {
+    "objectID": "about.html#elsewhere",
+    "href": "about.html#elsewhere",
+    "title": "About",
+    "section": "Elsewhere",
+    "text": "Elsewhere\n\nGitHub: raina-sid\nLinkedIn: sidraina89\nEmail: sidraina89@gmail.com\n\nIf you think something here is wrong, I’d like to know."
   },
   {
     "objectID": "posts/filtering-tool-outputs-in-inspect.html",
@@ -68,5 +82,12 @@
     "title": "What’s the right way to filter tool outputs in Inspect?",
     "section": "The open question",
     "text": "The open question\nIs ToolSource wrapping the intended pattern, something I’ve missed, or a sign that runtime filtering isn’t how Inspect expects this to be done? Any of those is a useful answer, and I’d rather build on the sanctioned thing than on a workaround I happened to find."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Writing",
+    "section": "",
+    "text": "Notes on LLM evaluation, model audit, and measurement validity — mostly things I ran into while building evals and reading the tools’ source.\n\n\n\n\n\n\n\n\n\nWhat’s the right way to filter tool outputs in Inspect?\n\n\nI went looking for a sanctioned way to filter what a tool returns, and couldn’t find one. Notes on what I tried, a hook that fails open silently, and the pattern I settled on.\n\n\n\n\n\nAug 21, 2026\n\n12 min\n\n\n\n\nNo matching items"
   }
 ]
