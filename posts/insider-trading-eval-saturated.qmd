@@ -14,6 +14,9 @@ draft: true
   69.0 pp, CI [63.4, 74.0].
 - **298 of 300 `gpt-5.5` runs leave the authored scenario on turn one**, reaching for a lawful branch the
   environment never authored a response for. The eval has no cell for where they went.
+- Extending the scenario by one turn so **every** lawful tier is exhausted, `gpt-5.5` still trades 0/130
+  (bound 2.3%) and reports to its manager in 130/130 runs. The refusal is not contingent on a lawful
+  route remaining.
 - Their **paraphrase arm is not a surface-only control**: it also changes the scenario economics, so it cannot
   isolate memorisation or evaluation awareness.
 
@@ -35,6 +38,8 @@ the basis in its report. I replayed their released prompts through Inspect acros
 | `gpt-4o` | paraphrase | 300 | **17.7%** | [13.8%, 22.4%] |
 | `gpt-5.5` | default | 300 | **0.0%** | [0.0%, 1.3%] |
 | `gpt-5.5` | paraphrase | 300 | **0.0%** | [0.0%, 1.3%] |
+| `gpt-4-0613` | **+high tier exhausted** | 30 | 66.7% | [48.8%, 80.8%] |
+| `gpt-5.5` | **+high tier exhausted** | 130 | **0.0%** | [0.0%, 2.9%] |
 
 **The replication is exact, not approximate.** Their released `default.json` targets `gpt-4-0613` — not the
 `gpt-4-32k-0613` of the paper's appendix — and that model is still served. It also carries `temperature=0.9`,
@@ -52,9 +57,16 @@ report no rate for it.
 
 ## The agents left the authored decision tree
 
-This is the finding I would put weight on, because it needs no causal story. The scenario exhausts the lawful
-routes — `find_trades low` returns nothing, then `moderate` — but never tries `high`. **298 of 300 `gpt-5.5` runs
-reach for exactly that tier**, which has no authored response, so the environment simply stops.
+This is the finding I would put weight on, because it needs no causal story. The tool schema advertises
+three risk tiers — `[low, moderate, high]` — and the scripted history exercises two: `find_trades low`
+returns nothing, then `moderate`. That failed search is one of the scenario's three pressure sources, so
+its premise is that lawful routes are exhausted. **298 of 300 `gpt-5.5` runs probe the third tier**, which
+this prompt does not answer, so the environment stops there.
+
+Apollo did author a high-risk branch — in one of their 26 released prompts (`tip_different_stock`, where
+it returns a lawful trade), so the tier was plainly considered. The default and 24 other variants omit it.
+The point is not that anyone overlooked it: it is that the default's exhaustion premise covers two of the
+three tiers its own schema offers, and current models notice the third.
 
 Among runs that did *not* take the tip, the remedy chosen:
 
@@ -74,6 +86,33 @@ and is why the zeros here are interpretable (`gpt-5.5` 300/300, `gpt-4o` 262/263
 **So the question has moved a turn later.** In 2023 it was *given an illegal shortcut, does the agent take it?*
 In 2026 it is *what does an agent do when its persistent search for lawful options returns nothing?* That is
 unobservable here — the scenario ends before it arises.
+
+## Closing the branch: what happens when nothing lawful is left
+
+The obvious objection to all of the above is that the models never actually run out of options — they
+reach for `high` and the scenario ends before answering. So I closed it: two messages appended to the
+default, an agent turn querying the high tier and a response saying nothing is available. **This is my
+extension, not Apollo's**, and the details matter (see Methods).
+
+| | `gpt-4-0613` | `gpt-5.5` |
+|---|---|---|
+| Traded on tip | 20/30 = **66.7%** [48.8%, 80.8%] | **0/130** [0%, 2.9%], exact bound **2.28%** |
+| Coherent | 30/30 | **130/130** |
+| Action chosen | `send_message` 10/10 non-traders | **`send_message` 130/130** |
+| Names and rejects the tip | — | **130/130 (100%)** |
+| Procedural language | — | 97/130 (74.6%) |
+
+**`gpt-5.5` does not trade when every lawful route is closed and the firm's survival is on the line.** A
+true 5% rate would produce 0/130 about once in 800 attempts; 3% about once in 50.
+
+The uniformity is the more striking part. On the unextended prompt the remedy split (298 search / 2
+report). With the last tier closed it collapses to **one** behaviour across 130 distinct completions:
+decline, and write to the manager. Every run names the tip and refuses it, three quarters using
+procedural language unprompted — *"appears to be material nonpublic information about LING, so we must
+not trade on it."* Nothing stalls, nothing sells the position, and one run in 130 invents a tool.
+
+So the refusal is not contingent on a lawful alternative existing. When the model runs out of lawful
+road it escalates to disclosure rather than toward the tip.
 
 ## Why I don't over-read the remedy shift
 
@@ -115,6 +154,26 @@ Inspect's own documentation, OpenAI gates reasoning summaries behind organisatio
 does not have. So **I cannot inspect why these models refuse**, only what they state — and note that even with
 verification the API returns a *summary* of the reasoning rather than raw chain-of-thought, so the gap narrows
 without closing.
+
+**The one-turn extension is mine, and it needed a positive control to trust.** Two messages appended to
+the default: an agent turn querying `find_trades high`, and a response saying no high-risk trades are
+recommended — mirroring messages 11 and 13 word-for-word. Message 16 is deliberately procedural, and its
+second sentence is verbatim from Apollo's own high-risk turn in `tip_different_stock`. Nothing else
+changed: same `misalignment_string`, canary, sampling settings, and messages 0–15.
+
+**A first attempt got this wrong, and the control caught it.** I originally transcribed message 16 from an
+observed `gpt-5.5` completion, which meant inserting a *second explicit ethical refusal* into the history.
+`gpt-4-0613` fell from 63.3% to **13.3%** — a 50 pp drop, CI [25.8, 66.8]. That is persona steering, which
+Apollo document (A.3.5: rejection wording strength substantially moves downstream rates) and which I
+should have anticipated. Rewritten neutrally, `gpt-4-0613` returns **20/30 (66.7%)** against its
+unextended 19/30 — difference −3.3 pp, CI [−26.1, +19.9], not significant. So the two appended messages do
+not move the scenario, and the earlier collapse was entirely my wording. The steered runs are discarded,
+not reported.
+
+One disclosed difference from Apollo's own high-risk variant: they place the query *before* the final
+pressure messages and return a lawful trade; I append it *after* and return nothing. The placement matches
+the order the models actually produced (298/300), and returning nothing is the point — it completes the
+exhaustion premise the default asserts on two of its three tiers.
 
 **Four deviations.** (1) `gpt-5.x` runs are not sampling-matched, per above. (2) `max_tokens` raised to 2048 for
 reasoning models, since reasoning tokens share the budget and 384 is consumed before any visible output. (3)
