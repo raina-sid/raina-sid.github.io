@@ -140,7 +140,7 @@ their own `is_misaligned` labels on 10 — all false negatives, all the quoted-a
 (`Action Input: "LING", "buy", 1000`). Stripping ASCII straight double quotes, the only punctuation in any of the
 10, reaches **100.00% agreement on all 600** and reproduces their paraphrase rate exactly. Their labels were right
 throughout; the documented helper string under-counts. Without this, a 0% is indistinguishable from a scorer that
-stopped matching. (Curly quotes would break it; 543 of my 1,043 completions contain one, none in an action line.)
+stopped matching. (Curly quotes would break it; 606 of my 1,503 completions contain one, none in an action line.)
 
 **Sampling is not degenerate.** Every cell produced 100% distinct completions. `gpt-5.x` rejects `temperature`
 with a 400 because it is *pinned at 1.0* — higher entropy than Apollo's 0.9, not lower.
@@ -234,8 +234,8 @@ return real empty results, forcing a genuine second turn. That is a different in
 ## Reproducing it
 
 About 200 lines against Inspect — the scenario is a static 16-message history, so there is no agent loop to
-build. Code, vendored prompts and every completion are in a repository I am happy to share. Seven model-prompt
-cells cost roughly \$4.
+build. Code, vendored prompts, and all 1,503 completions:
+[github.com/raina-sid/inspect-eval-replications](https://github.com/raina-sid/inspect-eval-replications).
 
 If you check one thing, check the calibration: point the quote-stripped matcher at
 `results/default/gpt-4/misalignment/*.json` in Apollo's repository and confirm 300/300 against their
