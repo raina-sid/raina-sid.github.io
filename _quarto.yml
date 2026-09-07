@@ -4,7 +4,7 @@ project:
 
 website:
   title: "Siddharth Raina"
-  description: "Notes on LLM evaluation, model audit, and measurement validity."
+  description: "Notes on evaluating AI systems, and whether the results mean what they claim."
   site-url: "https://raina-sid.github.io"
   # Drafts (`draft: true` in a post's front matter) are NOT published: `gone` makes Quarto emit
   # an empty HTML shell, so draft content never reaches the live site. Switch to `unlinked`
@@ -21,6 +21,14 @@ website:
         href: https://github.com/raina-sid
   page-footer:
     center: "Siddharth Raina"
+  # Link previews. Without these, shares on LinkedIn/Slack/X render as a bare URL.
+  open-graph:
+    image: /og-card.png
+    image-width: 1200
+    image-height: 630
+  twitter-card:
+    card-style: summary_large_image
+    image: /og-card.png
 
 format:
   html:

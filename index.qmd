@@ -9,5 +9,4 @@ listing:
 page-layout: full
 ---
 
-Notes on LLM evaluation, model audit, and measurement validity — mostly things I ran into while
-building evals and reading the tools' source.
+Notes on evaluating AI systems, and whether the results mean what they claim.
