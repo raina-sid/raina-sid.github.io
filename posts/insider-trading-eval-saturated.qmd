@@ -1,9 +1,8 @@
 ---
 title: "69% → 11% → 0%: three generations on Apollo's insider-trading eval"
 description: "Apollo's 2023 insider-trading result replicates on its target model and bounds below 1% on gpt-5.5. But that 0% does not mean the dilemma is solved: capable models leave the authored decision tree on turn one, and the scoring cannot see where they went."
-date: 2026-09-02
+date: 2026-09-07
 categories: [evals, replication, measurement-validity]
-draft: true
 ---
 
 ## TL;DR
@@ -166,7 +165,7 @@ observed `gpt-5.5` completion, which meant inserting a *second explicit ethical 
 `gpt-4-0613` fell from 63.3% to **13.3%** — a 50 pp drop, CI [25.8, 66.8]. That is persona steering, which
 Apollo document (A.3.5: rejection wording strength substantially moves downstream rates) and which I
 should have anticipated. Rewritten neutrally, `gpt-4-0613` returns **20/30 (66.7%)** against its
-unextended 19/30 — difference −3.3 pp, CI [−26.1, +19.9], not significant. So the two appended messages do
+unextended 19/30 — difference +3.3 pp, CI [−19.9, +26.1], not significant. So the two appended messages do
 not move the scenario, and the earlier collapse was entirely my wording. The steered runs are discarded,
 not reported.
 
