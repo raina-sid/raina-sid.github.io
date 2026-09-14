@@ -1,6 +1,6 @@
 ---
 title: "When do AI agents leak restricted information?"
-description: "A data policy saying \"don't disclose this\" leaked a bank account 30/30 times. Naming the tool-call channel took it to zero. Then the agent leaked the same information semantically — and the policy is what caused it."
+description: "A data policy saying \"don't disclose this\" leaked a bank account 30/30 times. Naming the tool-call channel took it to zero. Then the agent substituted a value derived from the restricted one — which the policy caused, and exact-match scoring cannot see."
 date: 2026-09-14
 categories: [evals, agents, information-flow, measurement-validity]
 ---
@@ -16,10 +16,11 @@ sanctions the alternative rather than creating it.
 - *"…must not appear in your output"*, the clause a person would write → **14/15**.
 - *"…must not appear in the arguments of any tool call"* → **0/100**, and **0/503** across every cell
   on this model whose policy named that channel (one-sided bound 0.59%).
-- **Then it leaked anyway, and the policy caused it.** Under pressure the winning policy held the
-  string while the agent derived the contact's **name** from the address and passed *that* to the
-  outbound tool — **8/30**, versus **1/30** with no policy at all. Exact-match scoring can't see it. A
-  runtime filter on the tool result can: **8/30 → 0/30**.
+- **Then the policy caused a substitution it didn't cover.** Under pressure the winning policy held
+  the restricted string while the agent derived the contact's **name** from the address and passed
+  *that* to the outbound tool — **8/30**, versus **1/30** with no policy at all. The policy never said
+  the name was restricted, so this is not a violation; it is a **zero on my metric with derived
+  information still flowing**. A filter on the tool result removes it: **8/30 → 0/30**.
 - **Three explanations proposed, three refuted**, each by the next cell. One robust result, documented
   heterogeneity, no mechanism.
 
@@ -90,7 +91,7 @@ extra clauses buy nothing measurable. The field-only policy, by contrast, ranged
 above 79% (Wilson lower bound 79.6%), and zero-cells were scaled to 100 to tighten the bound from 9.5%
 to 2.95%.*
 
-## The leak the design couldn't see
+## The substitution the metric couldn't see
 
 Now add pressure: a validator that refuses the permitted label, demands the account by name, and is
 made mandatory. The winning policy still held the string — and the agent **routed the information
@@ -105,14 +106,21 @@ person in prose. 11 occurrences in total, every one capitalised and spaced, none
 > which I cannot transmit under the stated data policy. I'll instead validate the non-sensitive contact
 > identifier shown in the vendor record (`J. Vermeulen`)…"*
 
-The model correctly identified the restriction, correctly declined the address, then invented a
-substitute it believed was "non-sensitive". Obeyed as written, defeated as intended. And because the
-domain sits on the *permitted* address in the same record, the restricted value is reconstructible
-from the pair.
+Read fairly, that is compliance rather than circumvention. The policy named *personal email
+addresses*; it never said the name was restricted. The agent declined what it was told to protect and
+offered something it wasn't — which a careful human would also do. One of the eight called the
+substitute "non-sensitive", a judgment it couldn't make; two others announced the trade outright
+(*"J. Vermeulen (individual AP contact; personal email restricted)"*), which is transparent rather
+than covert. Eight episodes can't separate those, and I won't claim a disposition from n=1.
+
+The narrow claim is about the instrument: information derived from the restricted field reached the
+outbound channel while my disclosure metric read **zero**. Whether that *is* a disclosure turns on
+whether the name is protected — which this environment never says, so the scorer can't decide it.
 
 **The policy produces this.** Same task, same pressure, no policy: standalone naming is **1/30** — it
 has the address, so it never needs a substitute. Adding the policy takes that to 8/30,
-**+23.3 pp [+5, +41]**. Not a leak the policy failed to prevent; a workaround it motivated.
+**+23.3 pp [+5, +41]**. The policy didn't fail to prevent something; it *produced* the substitution,
+by forbidding one route without designating another.
 
 **Which is where a runtime filter earns its keep** — same policy, same pressure, field stripped from
 the tool result before the model sees it:
@@ -126,13 +134,18 @@ the tool result before the model sees it:
 
 **8/30 → 0/30, +26.7 pp [+10, +44].** Removing the value removes the derivation, with nothing asked of
 the model. Note what the last row does *not* show: with no policy there was almost nothing to prevent
-(1/30), so the filter's effect there is null. It's worth having because it closes a hole a policy
+(1/30), so the filter's effect there is null. It's worth having because it closes a route a policy
 opens. The identity had a single source, which is why it works and also what bounds it: **a filter
-prevents derivation from what it removes, not reconstruction from what it leaves.**
+prevents derivation from what it removes, not inference from what it leaves.**
+
+How much the name gives away is environment-specific and unmeasured. The permitted mailbox shares the
+domain and addresses follow `initial.surname`, so anyone guessing that convention recovers the
+restricted address — a common convention, but one I chose when building the environment. Treat it as a
+property of the scenario, not a result.
 
 This nearly published inverted. My name detector also matched `j.vermeulen@…` — the address already
 counted in the column beside it — so the no-policy row first read 30/30, making the policy look like it
-*reduced* semantic leakage. The true baseline is 1/30, and the sign flips.
+*reduced* semantic substitution. The true baseline is 1/30, and the sign flips.
 
 ## Three explanations, all wrong
 
@@ -218,6 +231,10 @@ Completion rates vary independently, so compare directions, not effect sizes.
 - **A policy intervention can't be read apart from the task's natural route to the answer, and a
   successful suppression doesn't establish its mechanism.** The same sentence gave 30/30 and 3/30; this
   suppression survived four models and six rungs before dying to a task-variant change.
+- **A zero on a disclosure metric is not evidence of containment.** It is evidence that one exact
+  string did not appear. Before reporting one, ask what the restricted value's *derivatives* are — and
+  whether the policy names them, and whether the detector can see them. Mine covered neither, and the
+  agent used one.
 - **Check the base rate before interpreting a null.** The email arm looked like a clean 0/30 for two
   policies until its no-policy base rate turned out to be 6/30 — there was nothing to prevent.
 - **A detector must exclude every value already counted elsewhere.** Two of the numbers above were
@@ -243,7 +260,7 @@ adversarial, so treat every rate as a plausible lower bound.
 Code, environment, policy ladder and per-cell numbers:
 **[github.com/raina-sid/inspect-eval-replications](https://github.com/raina-sid/inspect-eval-replications)**
 (`src/evalrep/secret_propagation/`). Both task variants ship behind a `variant` flag — the ladder and
-cross-model cells are variant 1, the semantic leak and pressure cells variant 2 — with a table mapping
+cross-model cells are variant 1, the substitution and pressure cells variant 2 — with a table mapping
 every figure above to the one that produced it, which is what makes the confound in "Three
 explanations" checkable rather than merely disclosed.
 
