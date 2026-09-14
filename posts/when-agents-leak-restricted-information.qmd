@@ -244,6 +244,12 @@ nothing here concerns a trained disposition. And no mechanism.
 
 ## Reproduction
 
+Two task framings were used and they are not interchangeable, so the repo ships both behind a
+`variant` flag: the ladder, the four contrasts and the cross-model comparison are variant 1, while the
+semantic leak, the pressure cells and the email arm are variant 2. A table in the results directory
+maps every figure above to the variant that produced it — including for the confound described in
+"Three explanations", which is only checkable because both are runnable.
+
 Code, environment, policy ladder and per-cell numbers:
 **[github.com/raina-sid/inspect-eval-replications](https://github.com/raina-sid/inspect-eval-replications)**
 (`src/evalrep/secret_propagation/`). It ships `scripts/audit_cells.py`, which re-derives disclosure,
