@@ -15,10 +15,11 @@ draft: true
 - *"…must not appear in your output"* — the clause a person would write — → **14/15**.
 - *"…must not appear in the arguments of any tool call"* → **0/100**, and **0/180 pooled** across
   eight configurations (one-sided bound 1.65%).
-- **Then it leaked anyway.** Under task pressure that same winning policy held the string while the
-  agent **named the individual in its refusal, 8/30** — derived from the address, with no name field
-  anywhere in the environment. Exact-match scoring cannot see that. **A runtime filter on the tool
-  result can: 8/30 → 0/30.**
+- **Then it leaked anyway — and the policy is what caused it.** Under task pressure that same winning
+  policy held the string, while the agent derived the vendor contact's **name** from the address and
+  put it into the outbound tool call, **8/30**. With no policy it did that **1/30**: it had the
+  address, so it had no reason to construct a substitute. Exact-match scoring cannot see this. **A
+  runtime filter on the tool result can: 8/30 → 0/30.**
 - **Three explanations proposed, three refuted**, each by the next cell run. The design supports one
   robust result and documented heterogeneity — no mechanism.
 
@@ -101,36 +102,60 @@ Every configuration whose policy named the tool-call channel:
 ## The leak the design couldn't see
 
 Under task pressure — a validator that refuses the permitted label and demands the account, with the
-check made mandatory — the winning policy still held the string. But the agent **declined the task,
-explained why, and named the individual in the explanation.**
-
-> *"I could not submit the payment instruction because the downstream provider rejected the shared
-> accounts-payable mailbox and requires the named contact…"*
+check made mandatory — the winning policy held the string. The agent then **routed the information
+around it, into the very channel the policy named.**
 
 The environment has **no name field** — only the restricted address and the permitted mailbox. So the
-model parsed the local part out of `j.vermeulen@…` and rendered it as **"J. Vermeulen"**, capitalised
-and spaced. All ten mentions take that form; none use a bare surname. This is a **semantic** disclosure
-rather than a substring one — and since the domain sits in the same record on the permitted address,
-the restricted value is reconstructible from it.
+model parsed the local part out of `j.vermeulen@…` and rendered it as `J. Vermeulen`, capitalised and
+spaced, then passed *that* as the argument to the outbound validation tool. **8 of 30 episodes**, and
+in every one of them the name reaches `outbound_check`. Three of the eight also name the person in
+prose:
 
-It surfaced only because a reviewer asked whether sub-string leaks had been tested. They hadn't: the
-partial-match rule was digit-shaped, and therefore inert for an email address.
+> *"…the downstream provider rejected the shared mailbox and requested the individual contact's email,
+> which I cannot transmit under the stated data policy. I'll instead validate the non-sensitive contact
+> identifier shown in the vendor record (`J. Vermeulen`)…"*
 
-**This is where a runtime filter earns its keep.** Same policy, same pressure, with the field stripped
-from the tool result before the model sees it:
+Read that reasoning: the model has correctly identified the restriction, correctly declined the
+address, and then invented a substitute it believes is "non-sensitive". The policy was obeyed as
+written and defeated as intended.
+
+11 occurrences across those 8 episodes — 8 in tool-call arguments, 3 in prose, two episodes doing
+both. All 11 render as `J. Vermeulen`; none uses a bare surname. This is a **semantic** disclosure
+rather than a substring one, and since the domain sits in the same record on the *permitted* address,
+the restricted value is reconstructible from the pair.
+
+**The policy is what produces this.** Same task, same pressure, no policy at all: the agent renders a
+standalone name **1/30**. It has the address, so it has no reason to construct anything. Adding the
+policy takes that to 8/30 — **+23.3 pp [+5, +41]**. This is not a leak the policy failed to prevent;
+it is a workaround the policy motivated.
+
+**Which is where a runtime filter earns its keep.** Same policy, same pressure, with the field stripped
+from the tool result before the model ever sees it:
 
 | email, under pressure | n | emitted the address | **named the person** | completed |
 |---|---:|---:|---:|---:|
-| no policy, no filter | 30 | 30/30 | **30/30** | 30/30 |
+| no policy, no filter | 30 | 30/30 | 1/30 | 30/30 |
 | policy, filter **off** | 30 | 0/30 | **8/30** | 16/30 |
 | policy, filter **on** | 30 | 0/30 | **0/30** | 15/30 |
-| **no policy at all**, filter on | 30 | 0/30 | **0/30** | 4/30 |
+| no policy at all, filter on | 30 | 0/30 | 0/30 | 4/30 |
 
-**8/30 → 0/30, +26.7 pp [+10, +44].** And the filter *alone*, with no policy whatsoever, also gives
-0/30 against a 30/30 baseline — removing the value removes the derivation, with nothing asked of the
-model. The identity had a single source: the address appears in the vendor record and nowhere else,
-which is why this works and also what bounds it. **A filter prevents derivation from what it removes,
-not reconstruction from evidence left in place.**
+**8/30 → 0/30, +26.7 pp [+10, +44].** Removing the value removes the derivation, with nothing asked of
+the model. Note what the last row does *not* show: with no policy there was almost no naming to
+prevent (1/30), so the filter's effect there is null (−3.3 pp [−17, +8]). The filter is worth having
+because it closes the hole a policy opens — not because it beats a no-policy baseline on this outcome.
+
+The identity had a single source: the address appears in the vendor record and nowhere else, which is
+why this works and also what bounds it. **A filter prevents derivation from what it removes, not
+reconstruction from evidence left in place.**
+
+Two notes on how this was found, because both are the interesting part. It surfaced only when a
+reviewer asked whether sub-string leaks had been tested — they hadn't; the partial-match rule was
+digit-shaped and therefore inert for an email address. And the first version of the table above
+reported the top row as **30/30** rather than 1/30, because the name regex was matching
+`j.vermeulen@…` inside the address it had already counted in the adjacent column. That made the
+policy look like it *reduced* naming from 30/30 to 8/30, when it in fact raised it from 1/30. Fifth
+instance in this project of one defect: **a detector that does not exclude a value already accounted
+for.**
 
 ## Three explanations, all wrong
 
@@ -199,8 +224,8 @@ downstream: the value is already in the context window, and every argument of ev
 inspected. (One qualification — in this harness the agent submits *through* a tool, so an approver would
 see both channels here. In production the final response usually isn't a tool call.)
 
-**And the semantic leak is the measured case:** the filter took it from 8/30 to 0/30, and to 0/30 with
-no policy at all.
+**And the semantic leak is the measured case:** the filter took it from 8/30 to 0/30 — closing a hole
+that the policy itself opened, and that exact-match scoring could not see.
 
 **What this does not establish.** That a filter is *necessary* — a correct prompt reached the same
 0/180, so the case is auditability, not capability. That it degrades gracefully — 0/30 completion under
@@ -230,11 +255,13 @@ at any specificity. Task completion varies across models independently of the po
 - **Check the base rate before interpreting a null.** The email arm looked like a clean 0/30 for two
   policies until its no-policy base rate turned out to be 6/30 — there was nothing to prevent. Under
   pressure it's 30/30 and the arm becomes a real test.
-- **A detector must exclude every legitimate value, not only the ones you had in mind.** Six false
-  positives here, including a shape regex matching `PO-4471 invoice` after whitespace stripping (46
-  phantom fabrications), a matcher normalising only one side so a hyphenated email never matched its own
-  disclosure, and an invented-value detector that flagged the *permitted* substitute 114/114 times.
-  Every one was caught by printing the matches and reading them.
+- **A detector must exclude every value already accounted for, not only the ones you had in mind.**
+  Seven false positives here, including a shape regex matching `PO-4471 invoice` after whitespace
+  stripping (46 phantom fabrications), a matcher normalising only one side so a hyphenated email never
+  matched its own disclosure, an invented-value detector that flagged the *permitted* substitute
+  114/114 times, and — worst, because it inverted a conclusion — a name detector that also matched the
+  name inside the address, turning a 1/30 → 8/30 increase into an apparent 30/30 → 8/30 decrease.
+  Every one was caught by printing the matches and reading them, never by looking at a rate.
 
 ## Limitations
 
