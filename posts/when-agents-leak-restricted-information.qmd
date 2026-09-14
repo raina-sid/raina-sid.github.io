@@ -3,7 +3,6 @@ title: "When do AI agents leak restricted information?"
 description: "A data policy saying \"don't disclose this\" leaked a bank account 30/30 times. Naming the tool-call channel took it to zero. Then the agent leaked the same information semantically — and the policy is what caused it."
 date: 2026-09-14
 categories: [evals, agents, information-flow, measurement-validity]
-draft: true
 ---
 
 ## TL;DR
