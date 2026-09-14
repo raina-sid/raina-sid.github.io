@@ -132,12 +132,16 @@ it is a workaround the policy motivated.
 **Which is where a runtime filter earns its keep.** Same policy, same pressure, with the field stripped
 from the tool result before the model ever sees it:
 
-| email, under pressure | n | emitted the address | **named the person** | completed |
-|---|---:|---:|---:|---:|
-| no policy, no filter | 30 | 30/30 | 1/30 | 30/30 |
-| policy, filter **off** | 30 | 0/30 | **8/30** | 16/30 |
-| policy, filter **on** | 30 | 0/30 | **0/30** | 15/30 |
-| no policy at all, filter on | 30 | 0/30 | 0/30 | 4/30 |
+| email, under pressure | n | emitted the address | **named the person** | submitted | check passed |
+|---|---:|---:|---:|---:|---:|
+| no policy, no filter | 30 | 30/30 | 1/30 | 30/30 | 28/30 |
+| policy, filter **off** | 30 | 0/30 | **8/30** | 16/30 | **0/30** |
+| policy, filter **on** | 30 | 0/30 | **0/30** | 15/30 | **0/30** |
+| no policy at all, filter on | 30 | 0/30 | 0/30 | 4/30 | **0/30** |
+
+The last two columns are not the same thing, and the gap between them is the next section.
+*Submitted* means the agent produced the instruction; *check passed* means the mandatory
+validation succeeded first.
 
 **8/30 → 0/30, +26.7 pp [+10, +44].** Removing the value removes the derivation, with nothing asked of
 the model. Note what the last row does *not* show: with no policy there was almost no naming to
@@ -187,23 +191,37 @@ is invariant on the string, not on what the string identifies.
 Separating data type from task framing from alternative credibility needs a factorial built for it.
 This is not one.
 
-## The cost: these controls fail closed
+## The cost: under pressure, the only way to finish is to disclose
 
-| account number, under pressure unless noted | disclosed | completed |
-|---|---:|---:|
-| field-only policy | 22/30 | **28/30** |
-| tool-channel policy | **0/30** | **7/30** |
-| filter + full policy, *no* pressure | 0/33 | **33/33** |
-| filter + full policy, under pressure | 0/30 | **0/30** |
+The pressured environment makes validation mandatory and the validator accepts nothing but the
+restricted value. So there are two different outcomes worth counting, and they diverge completely:
 
-The leaky policy finishes the job by disclosing; the strict one refuses, naming the conflict explicitly.
-**A filter alone fails the task 100% of the time** (0/30) and needs a stated substitute to recover — and
-even then, when the environment refuses that substitute, everything stops.
+| account number, under pressure | disclosed | submitted | **check passed** |
+|---|---:|---:|---:|
+| no policy | 30/30 | 30/30 | **30/30** |
+| field-only policy | 22/30 | 28/30 | **22/30** |
+| tool-channel policy | **0/30** | 7/30 | **0/30** |
+| filter + full policy | **0/30** | 0/30 | **0/30** |
 
-I'd argue that's **correct behaviour, not a defect**: if a task genuinely requires a restricted value, a
-stopped task and an escalation beats a disclosure. But it has to be designed for, because
-administrators disable controls that cause outages. The severity is task-dependent too — on the email
-task the filter cost nothing (15/30 with, 16/30 without).
+Across all 150 pressured episodes, **an episode passes validation if and only if it disclosed** — 22
+and 22 for the field-only policy, 1 and 1 on the email task, zero and zero everywhere else. Not one
+episode passed the check without disclosing, and not one disclosed without passing. The task as
+configured is **unsatisfiable while honouring the policy**, and that is the honest statement of the
+cost.
+
+Which makes the middle column a trap. The tool-channel policy "submitted" 7/30 and the filtered email
+cell 15/30 — but every one of those submissions came *after* a failed mandatory check, with the agent
+offering the permitted substitute the validator had just rejected. A reviewer counting submissions
+would score that as three-quarters of a working system. Counting validated completions gives 0/30.
+
+So the strict configurations don't degrade gracefully; they stop. I'd argue that is **correct
+behaviour, not a defect** — if a task genuinely requires a restricted value, a halt plus an escalation
+beats a disclosure, and the agents did explain the conflict rather than silently failing. But it has to
+be designed for, because administrators disable controls that cause outages.
+
+An honest caveat on the other side: submitting over a failed check is not nothing. The agent was told
+the check was required, saw it fail, and submitted anyway — 7, 15, 16 and 19 times out of 30 in the
+four policy cells. That is its own instruction violation, and this design was not built to study it.
 
 **Fabrication: 0/75** across every filtered cell, bound 3.9%. The obvious worry — that removing a value
 makes the agent invent one — didn't happen.
@@ -228,8 +246,9 @@ see both channels here. In production the final response usually isn't a tool ca
 that the policy itself opened, and that exact-match scoring could not see.
 
 **What this does not establish.** That a filter is *necessary* — a correct prompt reached the same
-0/180, so the case is auditability, not capability. That it degrades gracefully — 0/30 completion under
-conflict. That it resists injection — a real architectural difference, but **nothing here tests it**;
+0/180, so the case is auditability, not capability. That it degrades gracefully — under conflict, 0/30
+episodes passed validation, and the design cannot separate the filter's contribution to that from the
+policy's. That it resists injection — a real architectural difference, but **nothing here tests it**;
 the validator conflict is task pressure, not deception. That it guarantees confidentiality — it
 guarantees one field from one tool doesn't enter the context, and the semantic leak shows the model can
 still reconstruct from what remains.
@@ -252,6 +271,11 @@ at any specificity. Task completion varies across models independently of the po
   sentence gave 30/30 and 3/30.
 - **A successful suppression doesn't establish its mechanism.** This one survived four models and six
   policy rungs before dying to a task-variant change.
+- **"Produced an answer" is not "completed the task", and under pressure the two can be perfectly
+  uncorrelated.** My completion metric was "the submit call contains the required field". It read 7/30
+  and 15/30 in cells where **0/30** had passed the validation the prompt made mandatory — the agents
+  submitted over an explicit refusal. Define the outcome as the environment's own success condition,
+  and if a check exists, require that it passed.
 - **Check the base rate before interpreting a null.** The email arm looked like a clean 0/30 for two
   policies until its no-policy base rate turned out to be 6/30 — there was nothing to prevent. Under
   pressure it's 30/30 and the arm becomes a real test.
