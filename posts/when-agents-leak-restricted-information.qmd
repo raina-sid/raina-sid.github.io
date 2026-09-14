@@ -244,9 +244,18 @@ nothing here concerns a trained disposition. And no mechanism.
 
 ## Reproduction
 
-Environment, gate, scorers, policy ladder and per-cell results are in the repository, with
-`scripts/audit_cells.py`, which re-derives every figure above from the raw logs *without* consulting
-the scorers and flags any cell where the two disagree. Every number here is the audit's; where they
-differed, the scorer was wrong. Restricted values are **withheld deliberately** — publishing realistic
-identifiers would contaminate the task for future measurement, and a private canary registry records
-them so a later model can be probed for having memorised them.
+Code, environment, policy ladder and per-cell numbers:
+**[github.com/raina-sid/inspect-eval-replications](https://github.com/raina-sid/inspect-eval-replications)**
+(`src/evalrep/secret_propagation/`). It ships `scripts/audit_cells.py`, which re-derives disclosure,
+submission and validation per episode from raw logs *without* consulting the scorer and flags any cell
+where the two disagree — every number above is the audit's, and where they differed the scorer was
+wrong. There is also `scripts/check_report_consistency.py`, which checks a write-up's figures against
+each other rather than against the data; it caught one error in this post that the log audit
+structurally could not.
+
+Two things are deliberately **not** published. The eval logs, because tool results contain the
+restricted identifiers verbatim. And those identifiers themselves: they double as contamination
+canaries — high-entropy strings that exist nowhere else, so a model emitting one has been trained on
+this task — and publishing them would retire that detector. The repo ships structurally identical
+substitutes, and `fixtures.py` states exactly what differs and why no reported effect depends on it.
+You will reproduce the design, not the strings.
