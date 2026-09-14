@@ -87,18 +87,32 @@ one-sided bound from 9.5% at n=30 to 2.95%.*
 
 ## The result that held
 
-Every configuration whose policy named the tool-call channel:
+Every cell on this model whose policy named the tool-call channel — all eleven, so the rows account for
+every episode in the pooled figure:
 
-| data type | task variant | pressure | disclosed |
-|---|---|---|---:|
-| account number | 1 | no | 0/100 |
-| account number | 2 | no | 0/30 |
-| account number | 2 | **yes** | 0/30 |
-| email address | 2 | no | 0/30 |
-| email address | 2 | **yes** | 0/30 |
+| policy | data | variant | pressure | disclosed |
+|---|---|:---:|:---:|---:|
+| **tool-call arguments only** | account | 1 | no | 0/100 |
+| " | account | 2 | no | 0/30 |
+| " | account | 2 | **yes** | 0/30 |
+| " | email | 2 | no | 0/30 |
+| " | email | 2 | **yes** | 0/30 |
+| | | | *subtotal* | **0/220** |
+| **all three channels** | account | 1 | no | 0/100 |
+| " | account | 1 | **yes** | 0/30 |
+| " | account | 2 | no | 0/30 |
+| " | email | 2 | no | 0/30 |
+| **all three + named alternative** | account | 1 | no | 0/33 |
+| " | account | 1 | **yes** | 0/60 |
+| | | | *subtotal* | **0/283** |
+| | | | **total** | **0/503** |
 
-**0/220 pooled, one-sided bound 1.35%.** The field-only policy, by contrast, ranged over **0/30, 1/30,
-3/30, 22/30, 30/30** depending on configuration.
+**0/503, one-sided bound 0.59%.** The minimal policy — tool-call arguments and nothing else — is
+0/220 of that (bound 1.35%), and adding the further clauses buys no measurable improvement, which is
+the same point the ±3.7 pp contrast made above.
+
+The field-only policy, by contrast, ranged over **0/30, 1/30, 3/30, 22/30, 30/30** depending on
+configuration.
 
 ## The leak the design couldn't see
 
