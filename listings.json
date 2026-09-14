@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/when-agents-leak-restricted-information.html",
       "/posts/insider-trading-eval-saturated.html",
       "/posts/filtering-tool-outputs-in-inspect.html"
     ]
