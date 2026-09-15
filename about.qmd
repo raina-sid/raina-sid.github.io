@@ -11,17 +11,15 @@ can actually control, where a benchmark's number stops carrying information, and
 apart. The recurring theme is that agentic evals make implicit claims about what a model had access to,
 and those claims are properties of the harness rather than of the task.
 
-## Things I've done in the open
+For the work itself and how the three projects fit together, see the
+[home page](index.qmd) and [How I evaluate evaluations](method.qmd).
 
-- **A merged contribution to [`inspect_ai`](https://github.com/UKGovernmentBEIS/inspect_ai)**, the
-  eval framework maintained by the UK AI Security Institute
-  ([PR #4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913)), plus an open question on
-  whether runtime filtering of tool outputs is in scope
-  ([#5020](https://github.com/UKGovernmentBEIS/inspect_ai/issues/5020)).
-- **[Notes on filtering tool outputs in Inspect](posts/filtering-tool-outputs-in-inspect.qmd)** —
-  where the framework can and cannot intercept a tool response, and a hook that fails open silently.
-- Ongoing: measuring whether published agentic-safety evals still discriminate on current models —
-  replication first, write-up only if the numbers hold up.
+## Background
+
+Forecasting and recommender systems in production, mostly: demand models, ranking, and the
+unglamorous part where you have to say what a metric does and does not license. That turned out to be
+better preparation for eval work than I expected — the recurring question is the same one, which is
+whether the number you can compute is the number you actually want.
 
 ## Elsewhere
 

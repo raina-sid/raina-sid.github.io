@@ -4,7 +4,7 @@ project:
 
 website:
   title: "Siddharth Raina"
-  description: "Notes on evaluating AI systems, and whether the results mean what they claim."
+  description: "Building and auditing evaluations for tool-using agents, with a focus on measurement validity."
   site-url: "https://raina-sid.github.io"
   # Drafts (`draft: true` in a post's front matter) are NOT published: `gone` makes Quarto emit
   # an empty HTML shell, so draft content never reaches the live site. Switch to `unlinked`
@@ -13,8 +13,10 @@ website:
   draft-mode: gone
   navbar:
     right:
+      - text: Method
+        href: method.qmd
       - text: Writing
-        href: index.qmd
+        href: writing.qmd
       - text: About
         href: about.qmd
       - icon: github

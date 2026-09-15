@@ -1,12 +1,90 @@
 ---
-title: "Writing"
-listing:
-  contents: posts
-  sort: "date desc"
-  type: default
-  fields: [date, title, description, reading-time]
-  feed: true
+title: "Siddharth Raina"
+subtitle: "AI evaluation & agent reliability"
 page-layout: full
+toc: false
 ---
 
-Notes on evaluating AI systems, and whether the results mean what they claim.
+I build and audit evaluations for **tool-using agents**, with a focus on measurement validity: whether
+an eval's number means what it is taken to mean.
+
+Most of my work starts from a specific worry. An agentic eval makes claims about what the model knew,
+what it did, and what the scorer saw — and each of those can fail on its own, quietly, while the run
+reports success. The three projects below are one line of work on those three failures, in that order.
+
+::: {.callout-note appearance="minimal"}
+**Code & experiments → [github.com/raina-sid/inspect-eval-replications](https://github.com/raina-sid/inspect-eval-replications)**
+
+Environments, scorers and per-cell results for the work below, plus the audit scripts that re-derive
+every published figure from raw logs without trusting my own scorers.
+:::
+
+## A research program in three parts
+
+### 1. Harness validity — can the environment control what the model knows?
+
+**[What's the right way to filter tool outputs in Inspect?](posts/filtering-tool-outputs-in-inspect.qmd)**
+· Aug 2026
+
+The interception point that looks correct **fails open silently.** If a filter raises, Inspect's
+`_emit_to_all` swallows the exception: the model receives unfiltered input and the eval still passes,
+with the control skipped and nothing in the log to say so.
+
+*Demonstrates:* reading a framework's internals to establish where a control can actually be enforced,
+and the difference between a control that is missing and one that is present but unenforceable. Filed
+as [an open question to the maintainers](https://github.com/UKGovernmentBEIS/inspect_ai/issues/5020)
+rather than a complaint, with a runnable repro that needs no API key.
+
+### 2. Benchmark validity — does the task still elicit the behaviour?
+
+**[69% → 11% → 0%: three generations on Apollo's insider-trading eval](posts/insider-trading-eval-saturated.qmd)**
+· Sep 2026
+
+The 2023 result **replicates** on its target model — 63.3% [45.5, 78.1] against the authors' own labels
+— and **bounds below 1%** on `gpt-5.5` (0/300, one-sided exact upper bound 0.99%). But **298 of those
+300 runs leave the authored scenario on turn one.** The zero measures departure from the script, not
+resolution of the dilemma.
+
+*Demonstrates:* faithful replication as the first step rather than the last, calibration against the
+original authors' labels, and recognising when a benchmark has saturated so that its headline number
+has stopped carrying information.
+[Code](https://github.com/raina-sid/inspect-eval-replications/tree/main/src/evalrep/insider_trading)
+
+### 3. Metric validity — does the scorer detect the behaviour?
+
+**[When do AI agents leak restricted information?](posts/when-agents-leak-restricted-information.qmd)**
+· Sep 2026
+
+A data policy naming the restricted *field* leaked it **30/30**. Naming the **tool-call channel** took
+it to **0/503**. Then, under pressure, the same policy held the string while information derived from
+it kept reaching the outbound channel — with the exact-match metric reading zero.
+
+*Demonstrates:* a policy ladder with an emphasis control that rules out the obvious confound; three
+proposed mechanisms retracted when later cells refuted them; and an audit that re-derives every figure
+from raw logs, which caught two of my own published numbers, one of them sign-inverted.
+[Code](https://github.com/raina-sid/inspect-eval-replications/tree/main/src/evalrep/secret_propagation)
+
+::: {.callout-note appearance="minimal"}
+**[How I evaluate evaluations →](method.qmd)** — the method these three share, and what it does not cover.
+:::
+
+## Research interests
+
+- **Agent evaluations** — tool-using agents in environments where the information available to the
+  agent is the experimental condition
+- **Evaluation validity** — harness, benchmark and metric failures, and how to tell them apart from
+  results
+- **Information-flow and tool-use safety** — what an agent can be prevented from emitting, and by
+  which mechanism
+- **Benchmark design and auditing** — replication, saturation, and re-deriving reported figures from
+  primary logs
+
+## Elsewhere
+
+A merged contribution to [`inspect_ai`](https://github.com/UKGovernmentBEIS/inspect_ai)
+([PR #4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913)), the eval framework maintained
+by the UK AI Security Institute · [All writing](writing.qmd) ·
+[GitHub](https://github.com/raina-sid) ·
+[Email](mailto:sidraina89@gmail.com)
+
+If you think something here is wrong, I would like to know — that is most of the value of publishing it.

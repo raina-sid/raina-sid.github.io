@@ -1,0 +1,14 @@
+---
+title: "Writing"
+listing:
+  contents: posts
+  sort: "date desc"
+  type: default
+  fields: [date, title, description, reading-time]
+  feed: true
+page-layout: full
+toc: false
+---
+
+Everything, newest first. The three-part framing is on the [home page](index.qmd), and the method they
+share is in [How I evaluate evaluations](method.qmd).
