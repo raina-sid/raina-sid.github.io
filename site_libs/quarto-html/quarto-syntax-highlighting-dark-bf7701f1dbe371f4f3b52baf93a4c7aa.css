@@ -1,0 +1,12 @@
+/* quarto syntax highlight colors */
+/* other quarto variables */
+:root {
+  --quarto-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* syntax highlight based on Pandoc's rules */
+.prevent-inlining {
+  content: "</";
+}
+
+/*# sourceMappingURL=ed92b1be08719789135ffb4fd846c5fe.css.map */
