@@ -17,8 +17,6 @@ website:
         href: method.qmd
       - text: Writing
         href: writing.qmd
-      - text: About
-        href: about.qmd
       - icon: github
         href: https://github.com/raina-sid
   page-footer:

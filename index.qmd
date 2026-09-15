@@ -79,12 +79,19 @@ from raw logs, which caught two of my own published numbers, one of them sign-in
 - **Benchmark design and auditing** — replication, saturation, and re-deriving reported figures from
   primary logs
 
-## Elsewhere
+## Who's writing this
+
+A data scientist, twelve years in industry, based in Berlin. Most of that was forecasting and
+recommender systems in production — demand models and ranking, where the metric is easy to compute and
+what it licenses you to say is not. That turned out to be better preparation for eval work than I
+expected: it is the same question either way, which is whether the number you can compute is the number
+you actually wanted.
 
 A merged contribution to [`inspect_ai`](https://github.com/UKGovernmentBEIS/inspect_ai)
 ([PR #4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913)), the eval framework maintained
 by the UK AI Security Institute · [All writing](writing.qmd) ·
 [GitHub](https://github.com/raina-sid) ·
+[LinkedIn](https://www.linkedin.com/in/sidraina89/) ·
 [Email](mailto:sidraina89@gmail.com)
 
 If you think something here is wrong, I would like to know — that is most of the value of publishing it.
