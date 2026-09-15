@@ -34,12 +34,19 @@ website:
 
 format:
   html:
-    # Light/dark pair. Quarto emits two stylesheets and adds a navbar toggle; GitHub Pages is only
-    # static hosting and contributes nothing here. `darkly` is the conventional dark counterpart to
-    # `cosmo` -- same Bootswatch family, so the type scale does not shift between modes.
+    # DARK IS LISTED FIRST, so it is the default. That is the fix for "I have to toggle on every
+    # page": Quarto does persist the choice in localStorage, but a visitor's FIRST load gets the
+    # default, and over file:// the browser treats each page as its own origin so nothing persists
+    # at all. Defaulting to dark makes the toggle a courtesy rather than a chore.
+    #
+    # Monochrome: the .scss files override the Bootswatch palettes to black/white with a black
+    # banner in both modes. Hue is removed entirely -- only lightness varies.
     theme:
-      light: cosmo
-      dark: darkly
+      dark: [darkly, theme-dark.scss]
+      light: [cosmo, theme-light.scss]
+    # Syntax colouring is the last source of hue. `none` keeps code monochrome; swap for `github`
+    # or `atom-one` if the tradeoff reads wrong on the code-heavy first post.
+    highlight-style: none
     css: styles.css
     toc: true
     toc-depth: 3

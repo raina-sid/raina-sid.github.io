@@ -1,34 +1,15 @@
-/* Restrained defaults: readable measure, calm code blocks, hierarchy over ornament.
-   The audience is researchers reading for substance, so the work here is spacing and
-   type scale -- nothing decorative. */
+/* Spacing and type scale ONLY. All colour lives in theme-dark.scss / theme-light.scss, so
+   there is exactly one place to change it and no rule that is right in one mode and wrong in
+   the other. */
 body { font-size: 1.02rem; }
 main { max-width: 46rem; }
 pre { font-size: 0.86rem; }
 
-/* A clear step between levels, so the three-part structure is legible at a glance
-   rather than needing to be read. */
+/* A clear step between levels, so the three-part structure is legible before it is read. */
 h1 { font-weight: 600; letter-spacing: -0.02em; }
 h2 { margin-top: 2.6rem; font-weight: 600; letter-spacing: -0.01em; }
 h3 { margin-top: 2rem; font-weight: 600; font-size: 1.18rem; }
-
-/* Selected-work entries: tighten the annotation to the heading it belongs to. */
 h3 + p { margin-top: 0.35rem; }
 
-/* Minimal callouts are used for the two signposts (code, method). Keep them quiet. */
 div.callout.callout-style-simple { border-left-width: 3px; }
-
 .quarto-listing .listing-title { font-weight: 600; }
-
-/* ---- theme-dependent colour ----------------------------------------------------------------
-   Every hardcoded colour has to be scoped, or it silently breaks in one mode. These were all
-   tuned for light and would sit at poor contrast on dark: a #444 quote on a dark ground is
-   nearly invisible. Quarto toggles `.quarto-light` / `.quarto-dark` on <body>, so scope rather
-   than guess with a single mid-grey that is wrong in both. */
-
-.quarto-light blockquote { border-left: 3px solid #d0d7de; color: #444; }
-.quarto-light .subtitle { color: #57606a; font-weight: 400; }
-.quarto-light .quarto-listing .listing-date { color: #6e7781; }
-
-.quarto-dark blockquote { border-left: 3px solid #444c56; color: #adbac7; }
-.quarto-dark .subtitle { color: #909dab; font-weight: 400; }
-.quarto-dark .quarto-listing .listing-date { color: #909dab; }

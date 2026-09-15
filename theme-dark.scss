@@ -1,0 +1,44 @@
+/*-- scss:defaults --*/
+// Monochrome dark. Black ground, white text, black banner. No hue anywhere: the only
+// variation is lightness, so nothing competes with the prose.
+$body-bg:            #000000;
+$body-color:         #ffffff;
+$link-color:         #ffffff;
+$link-hover-color:   #ffffff;
+
+// The banner: black on black, separated by a hairline rather than a fill.
+$navbar-bg:          #000000;
+$navbar-fg:          #ffffff;
+$navbar-hl:          #ffffff;
+
+$code-color:         #ffffff;
+$code-bg:            #161616;
+$pre-bg:             #0d0d0d;
+$border-color:       #2a2a2a;
+$table-border-color: #2a2a2a;
+
+// Secondary text -- dates, subtitles, captions. Grey is lightness, not colour.
+$gray-600:           #9a9a9a;
+$gray-500:           #b0b0b0;
+
+/*-- scss:rules --*/
+// Bootstrap fills the navbar and draws a bottom border in the theme colour; both reintroduce
+// a tone. Replace with a hairline so the banner reads as one black band.
+.navbar {
+  border-bottom: 1px solid #2a2a2a;
+  box-shadow: none;
+}
+// Links: underline carries the affordance, since colour no longer can.
+main a, .quarto-listing a {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: #6a6a6a;
+}
+main a:hover, .quarto-listing a:hover { text-decoration-color: #ffffff; }
+
+blockquote { border-left: 3px solid #3a3a3a; color: #c8c8c8; }
+.subtitle  { color: #9a9a9a; font-weight: 400; }
+.quarto-listing .listing-date { color: #8a8a8a; }
+// Callouts default to a blue accent. Neutralise.
+div.callout { border-left-color: #3a3a3a !important; background: #0d0d0d; }

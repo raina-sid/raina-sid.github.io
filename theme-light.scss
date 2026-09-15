@@ -1,0 +1,31 @@
+/*-- scss:defaults --*/
+// Monochrome light, kept as an option. The banner stays BLACK in both modes -- that was the
+// explicit ask, and it also gives the two modes one shared fixed point.
+$body-bg:            #ffffff;
+$body-color:         #000000;
+$link-color:         #000000;
+$link-hover-color:   #000000;
+
+$navbar-bg:          #000000;
+$navbar-fg:          #ffffff;
+$navbar-hl:          #ffffff;
+
+$code-color:         #000000;
+$code-bg:            #f2f2f2;
+$pre-bg:             #f7f7f7;
+$border-color:       #dcdcdc;
+$table-border-color: #dcdcdc;
+
+/*-- scss:rules --*/
+.navbar { border-bottom: 1px solid #000000; box-shadow: none; }
+main a, .quarto-listing a {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: #9a9a9a;
+}
+main a:hover, .quarto-listing a:hover { text-decoration-color: #000000; }
+blockquote { border-left: 3px solid #d0d0d0; color: #3a3a3a; }
+.subtitle  { color: #5a5a5a; font-weight: 400; }
+.quarto-listing .listing-date { color: #6a6a6a; }
+div.callout { border-left-color: #d0d0d0 !important; background: #fafafa; }
