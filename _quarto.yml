@@ -34,7 +34,12 @@ website:
 
 format:
   html:
-    theme: cosmo
+    # Light/dark pair. Quarto emits two stylesheets and adds a navbar toggle; GitHub Pages is only
+    # static hosting and contributes nothing here. `darkly` is the conventional dark counterpart to
+    # `cosmo` -- same Bootswatch family, so the type scale does not shift between modes.
+    theme:
+      light: cosmo
+      dark: darkly
     css: styles.css
     toc: true
     toc-depth: 3
