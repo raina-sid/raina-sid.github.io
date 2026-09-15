@@ -241,6 +241,37 @@ Completion rates vary independently, so compare directions, not effect sizes.
   wrong on first pass for that reason alone, one of them sign-invertingly so, and both were caught by
   printing the matches and reading them rather than by looking at a rate.
 
+## Where this sits
+
+Two bodies of work bear on this, and both are more developed than what I did here.
+
+**Architectural information-flow control.** The case for enforcing a boundary in the architecture
+rather than the prompt is made properly by [CaMeL](https://arxiv.org/abs/2503.18813), which splits a
+privileged LLM from a quarantined one so untrusted data cannot alter control flow, and by
+[FIDES](https://arxiv.org/abs/2505.23643), which does taint tracking with confidentiality labels and
+**selective hiding** — a general version of the one field my gate removes.
+[RTBAS](https://arxiv.org/abs/2502.08966) auto-executes only the tool calls it can show preserve
+confidentiality, and [Progent](https://arxiv.org/abs/2504.11703) confines privilege at the level of
+tool *arguments*, which is the channel this post finds decisive. Against these, my filter is a single
+hardcoded field, and the honest contribution is not the mechanism but the measurement beside it:
+a correct prompt reached the same zero, so on this task the architectural control bought auditability
+rather than capability. That is a narrower claim than any of the above make, and it is the one I can
+support. [SecureClaw](https://arxiv.org/abs/2606.09549)'s framing of *bounded declassification* is
+also the right vocabulary for the failure in §5 — an agent that derives a value from a restricted one
+is declassifying without a policy that says it may.
+
+**Measurement.** Two things in prior art would have improved my instrument before I built it.
+[AgentDojo](https://arxiv.org/abs/2406.13352) scores security by comparing environment state before
+and after — did the message actually reach the attacker — rather than by looking for a string. That is
+robust to every transformation exact matching misses, and it is the design I should have copied.
+And [ConfAIde](https://arxiv.org/abs/2310.17884) makes the point that whether a disclosure is a
+violation depends on context and norms rather than on the value itself, which is precisely why my
+scorer cannot decide whether the derived name counted: the environment never said.
+
+I did not find prior work that varies how a data policy *enumerates channels*, which is the
+manipulation here. That is weak evidence from a handful of searches rather than a novelty claim, and
+if it exists I would like to be pointed at it.
+
 ## Limitations
 
 One vendor. Two data types, one with a distinctive format. The two deepest cells are 0/100 (bound

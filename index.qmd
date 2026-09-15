@@ -19,7 +19,7 @@ Environments, scorers and per-cell results for the work below, plus the audit sc
 every published figure from raw logs without trusting my own scorers.
 :::
 
-## A research program in three parts
+## An eval makes three claims. Each can fail quietly.
 
 ### 1. Harness validity — can the environment control what the model knows?
 
