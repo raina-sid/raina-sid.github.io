@@ -91,7 +91,23 @@ A merged contribution to [`inspect_ai`](https://github.com/UKGovernmentBEIS/insp
 ([PR #4913](https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913)), the eval framework maintained
 by the UK AI Security Institute · [All writing](writing.qmd) ·
 [GitHub](https://github.com/raina-sid) ·
-[LinkedIn](https://www.linkedin.com/in/sidraina89/) ·
 [Email](mailto:sidraina89@gmail.com)
+
+<!-- LinkedIn profile badge. The <a> inside the div is the graceful fallback: if the third-party
+     script is blocked, slow, or removed, this degrades to a plain text link rather than a gap.
+     Loaded here only, not site-wide, so the posts carry no third-party script. -->
+```{=html}
+<div class="badge-base LI-profile-badge"
+     data-locale="en_US"
+     data-size="medium"
+     data-theme="dark"
+     data-type="VERTICAL"
+     data-vanity="sidraina89"
+     data-version="v1">
+  <a class="badge-base__link LI-simple-link"
+     href="https://www.linkedin.com/in/sidraina89?trk=profile-badge">LinkedIn — Siddharth Raina</a>
+</div>
+<script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"></script>
+```
 
 If you think something here is wrong, I would like to know — that is most of the value of publishing it.
