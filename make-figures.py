@@ -88,15 +88,21 @@ def claims() -> str:
     """Three columns. No boxes: a rule above each column separates them with less ink than a border,
     and the earlier boxed version left dead space under three lines of text."""
     W, colw, gap = 600, 184, 24
-    H = 176
+    H = 216
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
          f'role="img" aria-label="An eval makes three claims — about the harness, the benchmark and '
-         f'the metric — and each has its own quiet failure: the control can be skipped silently, the '
-         f'task saturates so the zero misleads, and derived information flows past the match.">',
+         f'the metric — and any of them can be false while the run reports success. Each has its own quiet '
+         f'failure: the control can be skipped silently, the task saturates so the zero misleads, and '
+         f'derived information flows past the match.">',
          '<g font-family="inherit" fill="currentColor">']
+    # without this the diagram assumes the reader already accepts the framing it is meant to explain
+    o.append('<text x="0" y="10" font-size="12" opacity="0.95">An eval reports one number. It stakes '
+             'three claims to earn it \u2014</text>')
+    o.append('<text x="0" y="27" font-size="12" opacity="0.95">and any of them can be false while the '
+             'run reports success.</text>')
     for i, (name, question, f1, f2) in enumerate(CLAIMS):
         x = i * (colw + gap)
-        o.append(f'<g transform="translate({x},0)">')
+        o.append(f'<g transform="translate({x},40)">')
         o.append(f'<line x1="0" y1="0" x2="{colw}" y2="0" stroke="currentColor" stroke-width="2" '
                  f'opacity="0.85"/>')
         o.append(f'<text x="0" y="24" font-size="14.5" font-weight="600">{name}</text>')
@@ -124,20 +130,29 @@ GENERATIONS = [
 def saturation() -> str:
     """Two panels, because the finding is that the two series move in OPPOSITE directions: trading
     collapses while leaving the scenario becomes near-universal. One panel alone tells half of it."""
-    W, panel, gap, row, top = 600, 264, 72, 54, 44
+    W, panel, gap, row, top = 600, 264, 72, 54, 82
     H = top + row * len(GENERATIONS) + 16
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
          f'role="img" aria-label="Across three model generations the rate of trading on the tip falls '
          f'from 69 percent to 11.4 percent to zero, while the share of refusing runs that instead go '
          f'looking for a lawful branch rises from 9 percent to 78 percent to 99 percent.">',
          '<g font-family="inherit" fill="currentColor">']
+    # the scenario, because three model names and two percentages explain nothing on their own
+    o.append('<text x="0" y="10" font-size="9.5" letter-spacing="0.11em" opacity="0.5">'
+             'THE SCENARIO</text>')
+    o.append('<text x="0" y="28" font-size="12" opacity="0.95">A trading agent under performance '
+             'pressure receives an insider tip its</text>')
+    o.append('<text x="0" y="45" font-size="12" opacity="0.95">management would disapprove of. Does it '
+             'trade on it, or find a lawful move?</text>')
+    o.append('<line x1="0" y1="58" x2="600" y2="58" stroke="currentColor" opacity="0.15"/>')
     for k, (title, sub) in enumerate([("Traded on the tip", "of all runs"),
-                                      ("Went looking for a lawful branch", "of runs that refused")]):
+                                      ("Searched for a lawful trade instead",
+                                       "of the runs that refused the tip")]):
         x0 = k * (panel + gap)
-        o.append(f'<text x="{x0}" y="12" font-size="12" font-weight="600">{esc(title)}</text>')
-        o.append(f'<text x="{x0}" y="27" font-size="10.5" opacity="0.55">{esc(sub)}</text>')
-        o.append(f'<line x1="{x0}" y1="34" x2="{x0 + panel}" y2="34" stroke="currentColor" '
-                 f'opacity="0.2"/>')
+        o.append(f'<text x="{x0}" y="{top - 32}" font-size="12" font-weight="600">{esc(title)}</text>')
+        o.append(f'<text x="{x0}" y="{top - 18}" font-size="10.5" opacity="0.55">{esc(sub)}</text>')
+        o.append(f'<line x1="{x0}" y1="{top - 10}" x2="{x0 + panel}" y2="{top - 10}" '
+                 f'stroke="currentColor" opacity="0.2"/>')
     for i, (name, rate, lo, hi, n, alt, alt_n) in enumerate(GENERATIONS):
         y = top + i * row
         o.append(f'<text x="0" y="{y + 10}" font-size="12.5" opacity="0.92">{esc(name)}</text>')
@@ -180,14 +195,15 @@ def setup() -> str:
     identifiers as secondary text.
     """
     W = 600
-    o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} 330" width="{W}" height="330" '
+    o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} 366" width="{W}" height="366" '
          f'role="img" aria-label="The task: prepare a payment instruction, which must state a payment '
          f'destination. The vendor record offers two ways to give one — a bank account number, which '
          f'is restricted, and a reference label, which is permitted. Both are present in every '
          f'condition. The agent can emit either by two routes: the submitted answer, and an outbound '
          f'tool call to a third-party validator that leaves the operator\u2019s systems. What varies '
          f'is what the data policy says. What is measured is whether the restricted value appears in '
-         f'either route.">',
+         f'either route. Under pressure the validator refuses the permitted label and demands the '
+         f'restricted one, so honouring the policy costs a task step.">',
          '<g font-family="inherit" fill="currentColor">']
 
     def band(y, kicker, text, sub=None):
@@ -233,8 +249,17 @@ def setup() -> str:
         o.append(f'<text x="116" y="{y + 18}" font-size="10.5" opacity="0.42">{esc(ident)}</text>')
 
     o.append('<line x1="0" y1="284" x2="600" y2="284" stroke="currentColor" opacity="0.15"/>')
-    band(300, "WHAT VARIES  ·  WHAT IS MEASURED",
-         "The wording of the data policy. Whether the restricted value appears in either route.")
+    # TWO things vary, and the second was absent from the first version even though half the
+    # reported cells turn on it.
+    o.append('<text x="0" y="300" font-size="9.5" letter-spacing="0.11em" opacity="0.5">'
+             'WHAT VARIES</text>')
+    o.append('<text x="0" y="318" font-size="12" opacity="0.95">'
+             'the wording of the data policy   \u00b7   whether the validator accepts the '
+             'permitted label</text>')
+    o.append('<text x="0" y="340" font-size="9.5" letter-spacing="0.11em" opacity="0.5">'
+             'WHAT IS MEASURED</text>')
+    o.append('<text x="0" y="358" font-size="12" opacity="0.95">'
+             'whether the restricted value appears in either route</text>')
     o.append("</g></svg>")
     return "\n".join(o)
 

@@ -1,21 +1,23 @@
 ```{=html}
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 176" width="600" height="176" role="img" aria-label="An eval makes three claims — about the harness, the benchmark and the metric — and each has its own quiet failure: the control can be skipped silently, the task saturates so the zero misleads, and derived information flows past the match.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 216" width="600" height="216" role="img" aria-label="An eval makes three claims — about the harness, the benchmark and the metric — and any of them can be false while the run reports success. Each has its own quiet failure: the control can be skipped silently, the task saturates so the zero misleads, and derived information flows past the match.">
 <g font-family="inherit" fill="currentColor">
-<g transform="translate(0,0)">
+<text x="0" y="10" font-size="12" opacity="0.95">An eval reports one number. It stakes three claims to earn it —</text>
+<text x="0" y="27" font-size="12" opacity="0.95">and any of them can be false while the run reports success.</text>
+<g transform="translate(0,40)">
 <line x1="0" y1="0" x2="184" y2="0" stroke="currentColor" stroke-width="2" opacity="0.85"/>
 <text x="0" y="24" font-size="14.5" font-weight="600">Harness</text>
 <text x="0" y="48" font-size="12.5" opacity="0.75">Did the model know what<tspan x='0' dy='16'>we intended it to know?</tspan></text>
 <line x1="0" y1="92" x2="184" y2="92" stroke="currentColor" opacity="0.18" stroke-dasharray="3 3"/>
 <text x="0" y="112" font-size="11.5" opacity="0.55" font-style="italic">the control can be<tspan x="0" dy="15">skipped silently</tspan></text>
 </g>
-<g transform="translate(208,0)">
+<g transform="translate(208,40)">
 <line x1="0" y1="0" x2="184" y2="0" stroke="currentColor" stroke-width="2" opacity="0.85"/>
 <text x="0" y="24" font-size="14.5" font-weight="600">Benchmark</text>
 <text x="0" y="48" font-size="12.5" opacity="0.75">Does the task still<tspan x='0' dy='16'>elicit the behaviour?</tspan></text>
 <line x1="0" y1="92" x2="184" y2="92" stroke="currentColor" opacity="0.18" stroke-dasharray="3 3"/>
 <text x="0" y="112" font-size="11.5" opacity="0.55" font-style="italic">the task saturates,<tspan x="0" dy="15">the zero misleads</tspan></text>
 </g>
-<g transform="translate(416,0)">
+<g transform="translate(416,40)">
 <line x1="0" y1="0" x2="184" y2="0" stroke="currentColor" stroke-width="2" opacity="0.85"/>
 <text x="0" y="24" font-size="14.5" font-weight="600">Metric</text>
 <text x="0" y="48" font-size="12.5" opacity="0.75">Does the scorer see it<tspan x='0' dy='16'>when it happens?</tspan></text>
