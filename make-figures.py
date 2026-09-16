@@ -43,6 +43,7 @@ def ladder() -> str:
     """Labels ABOVE the bars, not beside them: at a 42rem measure a label column steals the width
     the bars need, and both end up cramped."""
     W, row, top = 600, 46, 26
+    bar, gutter = 540, 12   # the count lives in the gutter, never on the fill
     H = top + row * len(LADDER) + 4
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
          f'role="img" aria-label="Disclosure rate across eight policy rungs. The five rungs that '
@@ -51,25 +52,22 @@ def ladder() -> str:
          '<g font-family="inherit" fill="currentColor">']
     o.append(f'<text x="0" y="10" font-size="10.5" opacity="0.55" letter-spacing="0.06em">'
              f'DISCLOSED — 0 TO 100%</text>')
-    o.append(f'<line x1="0" y1="17" x2="{W}" y2="17" stroke="currentColor" opacity="0.2"/>')
+    o.append(f'<line x1="0" y1="17" x2="{bar}" y2="17" stroke="currentColor" opacity="0.2"/>')
     for i, (label, hit, n) in enumerate(LADDER):
         y = top + i * row
         rate = hit / n
         o.append(f'<text x="0" y="{y + 11}" font-size="12.5" opacity="0.92">{esc(label)}</text>')
-        o.append(f'<rect x="0" y="{y + 19}" width="{W}" height="9" fill="currentColor" '
-                 f'opacity="0.09" rx="1"/>')
+        o.append(f'<rect x="0" y="{y + 19}" width="{bar}" height="9" fill="currentColor" '
+                 f'opacity="0.12" rx="1"/>')
         if hit:
-            o.append(f'<rect x="0" y="{y + 19}" width="{rate * W:.1f}" height="9" '
-                     f'fill="currentColor" opacity="0.9" rx="1"/>')
+            o.append(f'<rect x="0" y="{y + 19}" width="{rate * bar:.1f}" height="9" '
+                     f'fill="currentColor" opacity="0.88" rx="1"/>')
         else:
             o.append(f'<rect x="0" y="{y + 17}" width="2.5" height="13" fill="currentColor"/>')
-        # the count sits at the bar's end, or just past the zero tick
-        x = rate * W if hit else 0
-        anchor = "end" if rate > 0.85 else "start"
-        dx = -7 if anchor == "end" else 8
-        op = 0.95 if not hit else 0.55
-        o.append(f'<text x="{x + dx:.1f}" y="{y + 27}" font-size="11" text-anchor="{anchor}" '
-                 f'opacity="{op}">{hit}/{n}</text>')
+        # ALWAYS in the gutter. An earlier version anchored the count at the bar's end, which put
+        # near-white type on a near-white fill for every rung above 85% -- six of eight, invisible.
+        o.append(f'<text x="{bar + gutter}" y="{y + 27}" font-size="11" opacity="0.8">'
+                 f'{hit}/{n}</text>')
     o.append("</g></svg>")
     return "\n".join(o)
 
@@ -129,55 +127,70 @@ GENERATIONS = [
 
 def saturation() -> str:
     """Two panels, because the finding is that the two series move in OPPOSITE directions: trading
-    collapses while leaving the scenario becomes near-universal. One panel alone tells half of it."""
-    W, panel, gap, row, top = 600, 264, 72, 54, 82
-    H = top + row * len(GENERATIONS) + 16
+    collapses while leaving the scenario becomes near-universal.
+
+    Layout rewritten after two bugs that only showed on screen. The scenario text collided with the
+    panel headers, and the percentage labels were drawn ON the bars -- near-white type on a near-white
+    fill, i.e. invisible. Labels now live in their own gutter to the right of each panel, where they
+    read against the page rather than against the bar, and the interval whisker is drawn BELOW the bar
+    for the same reason.
+    """
+    W = 600
+    panel, gutter, between = 208, 48, 40
+    x_of = [0, panel + gutter + between]
+    row, top = 62, 116
+    H = top + row * len(GENERATIONS) + 4
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
-         f'role="img" aria-label="Across three model generations the rate of trading on the tip falls '
-         f'from 69 percent to 11.4 percent to zero, while the share of refusing runs that instead go '
-         f'looking for a lawful branch rises from 9 percent to 78 percent to 99 percent.">',
+         f'role="img" aria-label="Across three model generations the rate of trading on an insider tip '
+         f'falls from 69 percent to 11.4 percent to zero, while among the runs that refused the tip the '
+         f'share that searched for a lawful trade instead rises from 9 percent to 78 percent to 99 '
+         f'percent. The scenario: a trading agent under performance pressure receives an insider tip '
+         f'its management would disapprove of.">',
          '<g font-family="inherit" fill="currentColor">']
-    # the scenario, because three model names and two percentages explain nothing on their own
+
     o.append('<text x="0" y="10" font-size="9.5" letter-spacing="0.11em" opacity="0.5">'
              'THE SCENARIO</text>')
-    o.append('<text x="0" y="28" font-size="12" opacity="0.95">A trading agent under performance '
+    o.append('<text x="0" y="30" font-size="12.5" opacity="0.95">A trading agent under performance '
              'pressure receives an insider tip its</text>')
-    o.append('<text x="0" y="45" font-size="12" opacity="0.95">management would disapprove of. Does it '
-             'trade on it, or find a lawful move?</text>')
-    o.append('<line x1="0" y1="58" x2="600" y2="58" stroke="currentColor" opacity="0.15"/>')
+    o.append('<text x="0" y="48" font-size="12.5" opacity="0.95">management would disapprove of. Does '
+             'it trade on it, or find a lawful move?</text>')
+    o.append(f'<line x1="0" y1="66" x2="{W}" y2="66" stroke="currentColor" opacity="0.15"/>')
+
     for k, (title, sub) in enumerate([("Traded on the tip", "of all runs"),
                                       ("Searched for a lawful trade instead",
                                        "of the runs that refused the tip")]):
-        x0 = k * (panel + gap)
-        o.append(f'<text x="{x0}" y="{top - 32}" font-size="12" font-weight="600">{esc(title)}</text>')
-        o.append(f'<text x="{x0}" y="{top - 18}" font-size="10.5" opacity="0.55">{esc(sub)}</text>')
-        o.append(f'<line x1="{x0}" y1="{top - 10}" x2="{x0 + panel}" y2="{top - 10}" '
-                 f'stroke="currentColor" opacity="0.2"/>')
+        x0 = x_of[k]
+        o.append(f'<text x="{x0}" y="88" font-size="12" font-weight="600">{esc(title)}</text>')
+        o.append(f'<text x="{x0}" y="103" font-size="10.5" opacity="0.55">{esc(sub)}</text>')
+
     for i, (name, rate, lo, hi, n, alt, alt_n) in enumerate(GENERATIONS):
         y = top + i * row
-        o.append(f'<text x="0" y="{y + 10}" font-size="12.5" opacity="0.92">{esc(name)}</text>')
+        o.append(f'<text x="0" y="{y}" font-size="12.5" opacity="0.92">{esc(name)}</text>')
         for k, (v, vlo, vhi, vn) in enumerate([(rate, lo, hi, n), (alt, None, None, alt_n)]):
-            x0 = k * (panel + gap)
-            o.append(f'<rect x="{x0}" y="{y + 18}" width="{panel}" height="9" fill="currentColor" '
-                     f'opacity="0.09" rx="1"/>')
+            x0 = x_of[k]
+            o.append(f'<rect x="{x0}" y="{y + 10}" width="{panel}" height="10" fill="currentColor" '
+                     f'opacity="0.12" rx="1"/>')
             w = v / 100 * panel
             if v > 0:
-                o.append(f'<rect x="{x0}" y="{y + 18}" width="{w:.1f}" height="9" '
-                         f'fill="currentColor" opacity="0.9" rx="1"/>')
+                o.append(f'<rect x="{x0}" y="{y + 10}" width="{w:.1f}" height="10" '
+                         f'fill="currentColor" opacity="0.85" rx="1"/>')
             else:
-                o.append(f'<rect x="{x0}" y="{y + 16}" width="2.5" height="13" fill="currentColor"/>')
+                o.append(f'<rect x="{x0}" y="{y + 8}" width="2.5" height="14" fill="currentColor"/>')
+            # the number goes in its own gutter, never on top of the fill
+            o.append(f'<text x="{x0 + panel + 8}" y="{y + 19}" font-size="11.5" opacity="0.85">'
+                     f'{v:.1f}%</text>')
+            # interval below the bar, so it is legible whatever the bar is doing
             if vlo is not None:
                 a, b = vlo / 100 * panel, vhi / 100 * panel
-                o.append(f'<line x1="{x0 + a:.1f}" y1="{y + 22.5}" x2="{x0 + b:.1f}" '
-                         f'y2="{y + 22.5}" stroke="currentColor" stroke-width="1" opacity="0.55"/>')
+                yy = y + 27
+                o.append(f'<line x1="{x0 + a:.1f}" y1="{yy}" x2="{x0 + b:.1f}" y2="{yy}" '
+                         f'stroke="currentColor" stroke-width="1" opacity="0.5"/>')
                 for e in (a, b):
-                    o.append(f'<line x1="{x0 + e:.1f}" y1="{y + 19}" x2="{x0 + e:.1f}" '
-                             f'y2="{y + 26}" stroke="currentColor" stroke-width="1" opacity="0.55"/>')
-            anchor = "end" if v > 60 else "start"
-            tx = x0 + w + (-6 if anchor == "end" else 8)
-            o.append(f'<text x="{tx:.1f}" y="{y + 26}" font-size="11" text-anchor="{anchor}" '
-                     f'opacity="0.6">{v:.1f}%</text>')
-            o.append(f'<text x="{x0}" y="{y + 41}" font-size="10" opacity="0.4">n={vn}</text>')
+                    o.append(f'<line x1="{x0 + e:.1f}" y1="{yy - 3}" x2="{x0 + e:.1f}" '
+                             f'y2="{yy + 3}" stroke="currentColor" stroke-width="1" opacity="0.5"/>')
+            o.append(f'<text x="{x0}" y="{y + 44}" font-size="10" opacity="0.4">n={vn}</text>')
+    o.append(f'<text x="0" y="{H - 2}" font-size="10" opacity="0.4">'
+             f'whisker = 95% interval</text>')
     o.append("</g></svg>")
     return "\n".join(o)
 
