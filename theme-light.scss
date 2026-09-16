@@ -27,5 +27,8 @@ main a, .quarto-listing a {
 main a:hover, .quarto-listing a:hover { text-decoration-color: #000000; }
 blockquote { border-left: 3px solid #d0d0d0; color: #3a3a3a; }
 .subtitle  { color: #5a5a5a; font-weight: 400; }
+// The description sits under a white title; muting it makes the hierarchy tonal as well as
+// dimensional, which is the only lever left once hue is gone.
+.quarto-listing .listing-description { color: #4a4a4a; }
 .quarto-listing .listing-date { color: #6a6a6a; }
 div.callout { border-left-color: #d0d0d0 !important; background: #fafafa; }

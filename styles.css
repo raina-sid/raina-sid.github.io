@@ -12,11 +12,24 @@ pre  { font-size: 0.86rem; line-height: 1.5; }
 
 h1 { font-weight: 600; letter-spacing: -0.02em; }
 h2 { margin-top: 2.6rem; font-weight: 600; letter-spacing: -0.01em; }
-h3 { margin-top: 2rem; font-weight: 600; font-size: 1.18rem; }
-h3 + p { margin-top: 0.35rem; }
+h3 { margin-top: 2rem; font-weight: 600; }
+/* NOTE no font-size on h3. An earlier `font-size: 1.18rem` here was written for a homepage section
+   that no longer exists, and its only remaining effect was to SHRINK the listing titles below the
+   theme's responsive size -- which is what made them blend into the descriptions. */
 
 div.callout.callout-style-simple { border-left-width: 3px; }
-.quarto-listing .listing-title { font-weight: 600; }
+
+/* ---- the Writing listing ------------------------------------------------------------------- */
+/* Quarto sets `margin-bottom: 0` on the listing title, so the description butts straight against
+   it. In a monochrome design a heading can only separate itself by size, weight and SPACE, so all
+   three are set explicitly here; colour is handled in the theme .scss files. */
+div.quarto-post .body h3.listing-title {
+  font-weight: 600;
+  line-height: 1.25;          /* a two-line title should read as one unit */
+  margin-bottom: 0.7rem;
+}
+div.quarto-post .listing-description { line-height: 1.6; }
+div.quarto-post { padding-top: 1.4rem; padding-bottom: 1.4rem; }
 
 /* ---- landing page only (.spaced exists nowhere else) --------------------------------------- */
 

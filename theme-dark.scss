@@ -39,6 +39,9 @@ main a:hover, .quarto-listing a:hover { text-decoration-color: #ffffff; }
 
 blockquote { border-left: 3px solid #3a3a3a; color: #c8c8c8; }
 .subtitle  { color: #9a9a9a; font-weight: 400; }
+// The description sits under a white title; muting it makes the hierarchy tonal as well as
+// dimensional, which is the only lever left once hue is gone.
+.quarto-listing .listing-description { color: #a8a8a8; }
 .quarto-listing .listing-date { color: #8a8a8a; }
 // Callouts default to a blue accent. Neutralise.
 div.callout { border-left-color: #3a3a3a !important; background: #0d0d0d; }
