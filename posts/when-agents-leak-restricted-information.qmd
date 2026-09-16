@@ -100,9 +100,8 @@ Pooling every cell whose policy named the tool-call channel, so the rows account
 | all three + named alternative | 2 | **0/93** |
 | | **total** | **0/503** |
 
-That is **0/503, one-sided bound 0.59%** — and it spans both conditions: **150 of those episodes were
-under task pressure** (4 cells) and 353 were not (7 cells). Zero in both. The minimal clause alone
-accounts for 0/220 of the total, and the extra clauses buy nothing measurable.
+That is **0/503, one-sided bound 0.59%**, and the minimal clause alone accounts for 0/220 of it — the
+extra clauses buy nothing measurable.
 
 Setting pressure against policy strength directly is the clearest thing this data does:
 
@@ -119,11 +118,9 @@ Setting pressure against policy strength directly is the clearest thing this dat
 twenty-two points to a field-only one; against every rung that names the tool-call channel it does
 nothing at all.
 
-Two cautions on reading that. The pooled unpressured-vs-pressured rate across *all* cells — 26.6%
-against 36.0% — should be ignored: the two groups do not share a policy mix, so most of that gap is
-composition rather than pressure. And the field-only row pools configurations that individually range
-from 0/30 to 30/30, which is the heterogeneity the next section is about; +22.2 pp is an average over
-conditions that disagree, not a stable effect. The field-only policy, by contrast, ranged over **0/30, 1/30,
+One caution: the field-only row averages configurations that individually range from 0/30 to 30/30, so
++22.2 pp is a mean over cells that disagree rather than a stable effect. That heterogeneity is the next
+section. The field-only policy, by contrast, ranged over **0/30, 1/30,
 3/30, 22/30, 30/30** depending on configuration.
 
 *Uneven n is deliberate: failing rungs were screened at 15–30, since 15/15 already puts the leak rate
@@ -198,10 +195,10 @@ line, and the design doesn't earn it.
 label **0/33** in variant 1 and **23/30** in variant 2 — in one it never considered the compliant route
 at all. Refuted by (iii).
 
-**(iii) Task pressure predicts the failures.** Adding the validator took field-only from 3/30 to
-**22/30**, +63.3 pp [+40, +77]. Refuted by a matched comparison: under *identical* pressure and an
-identical 30/30 base rate, field-only failed **22/30** for the account number and held **1/30** for the
-email, **+70.0 pp [+48, +83]**. It tracks the data type, not the pressure.
+**(iii) Task pressure predicts the failures.** The table above shows pressure moving a field-only
+policy. Refuted by a matched comparison: under *identical* pressure and an identical 30/30 base rate, it
+failed **22/30** for an account number and held **1/30** for an email, **+70.0 pp [+48, +83]**. It
+tracks the data type, not the pressure.
 
 Each was proposed after the data supporting it and before the data killing it. What survives is a
 contrast, not a mechanism: the field-only policy is chaotic across configurations while the
@@ -284,20 +281,18 @@ Completion rates vary independently, so compare directions, not effect sizes.
 
 Two bodies of work bear on this, and both are more developed than what I did here.
 
-**Architectural information-flow control.** The case for enforcing a boundary in the architecture
-rather than the prompt is made properly by [CaMeL](https://arxiv.org/abs/2503.18813), which splits a
-privileged LLM from a quarantined one so untrusted data cannot alter control flow, and by
-[FIDES](https://arxiv.org/abs/2505.23643), which does taint tracking with confidentiality labels and
-**selective hiding** — a general version of the one field my gate removes.
-[RTBAS](https://arxiv.org/abs/2502.08966) auto-executes only the tool calls it can show preserve
-confidentiality, and [Progent](https://arxiv.org/abs/2504.11703) confines privilege at the level of
-tool *arguments*, which is the channel this post finds decisive. Against these, my filter is a single
-hardcoded field, and the honest contribution is not the mechanism but the measurement beside it:
-a correct prompt reached the same zero, so on this task the architectural control bought auditability
-rather than capability. That is a narrower claim than any of the above make, and it is the one I can
-support. [SecureClaw](https://arxiv.org/abs/2606.09549)'s framing of *bounded declassification* is
-also the right vocabulary for the failure in §5 — an agent that derives a value from a restricted one
-is declassifying without a policy that says it may.
+**Architectural information-flow control.** Enforcing a boundary in the architecture rather than the
+prompt is done properly by [CaMeL](https://arxiv.org/abs/2503.18813), which quarantines untrusted data
+from control flow, and [FIDES](https://arxiv.org/abs/2505.23643), whose taint tracking with
+confidentiality labels and **selective hiding** is the general version of the one field my gate removes.
+[RTBAS](https://arxiv.org/abs/2502.08966) executes only tool calls it can prove preserve
+confidentiality; [Progent](https://arxiv.org/abs/2504.11703) confines privilege at the level of tool
+*arguments*, the channel this post finds decisive. Against these my filter is a single hardcoded field,
+and the contribution is not the mechanism but the measurement beside it — a correct prompt reached the
+same zero, so here the architectural control bought auditability, not capability.
+[SecureClaw](https://arxiv.org/abs/2606.09549)'s *bounded declassification* is also the right vocabulary
+for the failure above: an agent deriving a value from a restricted one is declassifying without
+authority to.
 
 **Measurement.** Two things in prior art would have improved my instrument before I built it.
 [AgentDojo](https://arxiv.org/abs/2406.13352) scores security by comparing environment state before
