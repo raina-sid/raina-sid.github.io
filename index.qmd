@@ -49,9 +49,6 @@ scorers, and the audit that re-derives every published figure from raw logs.
 
 ------------------------------------------------------------------------
 
-A data scientist, twelve years in industry, based in Berlin; forecasting and recommender systems
-before this, which turned out to be the same question in a different costume.
-
 [GitHub](https://github.com/raina-sid) ·
 [LinkedIn](https://www.linkedin.com/in/sidraina89/) ·
 [Email](mailto:sidraina89@gmail.com) ·

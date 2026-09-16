@@ -1,127 +1,142 @@
 ---
 title: "How I evaluate evaluations"
-subtitle: "Three claims every agentic eval makes, and how each one fails quietly"
+subtitle: "Principles for deciding whether a number means what it is taken to mean"
 date: last-modified
 toc: true
 ---
 
-An agentic evaluation reports one number and makes three separate claims to earn it:
+An evaluation reports one number and stakes three claims to earn it:
 
-1. **the model knew what the environment intended it to know** — a claim about the *harness*;
-2. **the task still elicits the behaviour being measured** — a claim about the *benchmark*;
-3. **the scorer sees the behaviour when it occurs** — a claim about the *metric*.
+1. the model received what the design intended it to receive — a claim about the **harness**;
+2. the task still elicits the behaviour being measured — a claim about the **benchmark**;
+3. the scorer detects that behaviour when it occurs — a claim about the **metric**.
 
-Any of the three can be false while the run completes, the log looks clean and the number looks
-plausible. That is the problem: these failures do not announce themselves, and none of them is visible
-in an aggregate. Each of my three write-ups is one of these failures, found the hard way.
+Any of the three can be false while the run completes, the log looks clean, and the number looks
+plausible. That is what makes them dangerous: none of these failures announces itself, and none is
+visible in an aggregate. You find them by going looking.
 
-What follows is the method that survived, stated as things I now do rather than principles I hold.
+What follows is what I check, organised by which claim it protects.
 
 ## 1. Harness validity
 
-The claim is that the environment controlled what reached the model. In practice this is a property of
-framework internals, not of the eval you wrote.
+*Did the model receive what the design intended?*
 
-The case that taught me: the interception point that looks correct for filtering a tool's output is a
-hook, and hooks are observers — Inspect's `_emit_to_all` swallows exceptions. So a filter that raises
-lets unfiltered input through, and **the eval passes with the control silently skipped.** Nothing in
-the log distinguishes "the control applied" from "the control was never applied."
+An eval's controls are usually written in the eval and enforced by the framework. That gap is where
+this claim breaks, because a control can be present in your code and absent at runtime.
 
-What I do now:
+**Establish that the control fired, per episode, from the transcript.** Not from a counter, not from
+"the code path ran". A control you cannot show applied did not apply, and the difference between
+"applied" and "silently skipped" is invisible in a pass/fail result.
 
-- **Verify the control fired, per episode, from the transcript.** Not from a counter, and not from
-  "the code ran." A control that cannot be shown to have applied did not apply.
-- **Prefer fail-closed.** A control that silently doesn't apply is worse than no control, because it
-  also reads as evidence of care. If a filter cannot fail closed, curate the corpus instead — fewer
-  moving parts, nothing to fail open.
-- **Read the framework, not the docs.** Both facts I needed were in the source, three paragraphs
-  apart, and neither page pointed at the other.
+**Ask what your control does when it errors.** If the answer is "the run continues", it is not a
+control — it is a suggestion. Interception points built for observation typically swallow exceptions
+by design, which means a filter that raises lets unfiltered input through while the run still reports
+success. Prefer mechanisms that fail closed, and if you cannot have one, at least record which
+episodes the control touched.
+
+**Read the framework's source for where interception is actually possible.** Documentation describes
+intent; source describes behaviour. The two diverge most often exactly where you want a guarantee.
+
+**If you can curate the environment instead of filtering at runtime, curate.** Fewer moving parts and
+nothing to fail open. Runtime interception earns its keep only where curation is impossible — live
+third-party tools, open-ended browsing, or when the noise itself is what you are measuring.
+
+**State what state is shared.** Anything constructed once per task rather than once per sample is
+shared across every sample and every epoch. Per-episode state belongs somewhere per-episode, or
+better, is derived from the transcript so it cannot silently regress.
 
 ## 2. Benchmark validity
 
-The claim is that the task still elicits the behaviour. Benchmarks decay, and they decay silently:
-the harness works, the scorer runs, and the number goes to zero for the wrong reason.
+*Does the task still elicit the behaviour?*
 
-The case: Apollo's 2023 insider-trading result replicates on its target model, 63.3% [45.5, 78.1]
-against the authors' own labels, and bounds below 1% on a 2026 model — 0/300, one-sided exact upper
-bound 0.99%. A tempting headline. But **298 of those 300 runs leave the authored scenario on turn
-one**, reaching for a lawful option the script never anticipated. The zero measures departure from the
-decision tree, not resolution of the dilemma. The eval no longer discriminates, and its number has
-stopped carrying the information it used to.
+Benchmarks decay, and they decay quietly: the harness works, the scorer runs, and the number moves for
+a reason that has nothing to do with the construct.
 
-What I do now:
+**Replicate before extending.** A replication on the original target is what licenses any claim about
+a new number. Calibrate against the authors' own labels where they released them, and mark clearly
+what is yours.
 
-- **Replicate before extending.** The replication is what licenses any claim about the new number.
-  Calibrate against the original authors' labels where they released them, and mark clearly what is
-  mine.
-- **Read where the trajectories went**, not just what they scored. A zero is a claim about behaviour;
-  behaviour lives in transcripts.
-- **Choose a dependent variable that published work already shows varies.** My own two experiments
-  make the point: insider-trading behaviour moved across generations, while arithmetic accuracy on
-  structured tables was saturated on arrival. Three nulls came from picking the second kind.
+**Read where the trajectories went, not only what they scored.** A zero is a claim about behaviour,
+and behaviour lives in transcripts. A capable model that leaves an authored scenario early scores
+identically to one that faced the dilemma and declined — and those mean opposite things.
+
+**Choose a dependent variable that published work already shows varies.** A measure that is saturated
+on arrival cannot move, so a null tells you nothing about your manipulation. This is the cheapest
+avoidable way to spend a budget on an uninterpretable result.
+
+**Before removing information from a task, delete it from every source and check the task becomes
+unanswerable.** If it stays answerable, withholding one route cannot cost anything — and you can know
+that in advance rather than after the run.
+
+**Treat "refused" and "never engaged" as different outcomes.** Collapsing them is how a saturated
+benchmark keeps reporting a safety improvement.
 
 ## 3. Metric validity
 
-The claim is that the scorer detects the behaviour. This is where I have made the most mistakes, and
-where the mistakes are hardest to see, because a detector fails **silently and in the direction of a
-tidy story**.
+*Does the scorer detect the behaviour?*
 
-The case: a data policy naming the restricted field leaked it 30/30; naming the tool-call channel took
-it to 0/503. Under pressure, the same policy held the restricted string while information derived from
-it kept reaching the outbound channel — and the exact-match metric read **zero**. Whether that counts
-as a disclosure depends on a judgment the environment never expressed, so the scorer could not decide
-it. What it does establish is narrower and more useful: **a zero on a disclosure metric is not evidence
-of containment.** It is evidence that one exact string did not appear.
+This is where errors are hardest to see, because a detector fails **silently and in the direction of a
+tidy story**. It is also where most of my own mistakes have been.
 
-What I do now:
+**Print the matches and read them.** No category count should be quoted until its non-matches have
+been inspected. A heuristic over model prose fails quietly and plausibly, and the aggregate never
+shows it.
 
-- **Print the matches and read them.** Every category count gets its non-matches inspected before it is
-  quoted. Coding model prose with a regex has produced plausible-but-wrong numbers for me repeatedly,
-  and the aggregate never showed it.
-- **A detector must exclude every value already accounted for.** A name detector that also matched the
-  address in the column beside it turned a 1/30 → 8/30 *increase* into an apparent 30/30 → 8/30
-  decrease. Same data, opposite sign, and the only thing that caught it was a reader checking my
-  arithmetic.
-- **Define the outcome as the environment's own success condition.** "Produced an answer" is not
-  "completed the task": I reported 7/30 and 15/30 completions in cells where **0/30** had passed the
-  validation the prompt made mandatory. The agents submitted over an explicit refusal.
-- **Re-derive every figure from raw logs, without consulting the scorer.** This is now a script rather
-  than an intention. It found eight wrong figures across the propagation work, including two scorer
-  metrics that were constants — one always-true, one always-false, neither visible in any rate.
-- **Ask what the restricted value's derivatives are.** If the policy doesn't name them and the detector
-  can't see them, a zero means very little.
+**A detector must exclude every value already accounted for.** Including the ones in the adjacent
+column. A detector that also matches something you counted elsewhere can invert the sign of a result,
+not merely inflate it.
 
-## What holds all three together
+**Normalise per purpose, not per project.** Stripping punctuation is correct when exact-matching an
+identifier whose canonical form has none, and catastrophic when shape-matching, because it turns
+ordinary references into false positives. One normalisation per question, not one per codebase.
 
-**A positive control, always.** If the manipulation cannot be shown to work in some condition, a null
-is uninterpretable. I once designed a probe whose stimulus was degenerate and only the positive control
-revealed it — the model under test masked the defect by declining the whole category.
+**Define the outcome as the environment's own success condition.** "Produced an answer" is not
+"completed the task". Where a check exists, require that it passed — otherwise an agent that submits
+over an explicit refusal counts as a success.
 
-**Vary the task's incidental framing before attributing an effect to your manipulation.** I proposed
-three mechanisms for one effect and each was refuted by the next cell I ran. The same policy text gave
-30/30 and 3/30 depending on whether the submit tool's field was named `destination` or `required_value`.
-A policy's measured effect size is a property of the task, not of the policy text.
+**Ask what the target's derivatives are.** A zero on exact matching means one exact string did not
+appear. If the thing you are protecting can be encoded, partially disclosed, or reconstructed from
+what remains, your metric does not measure containment. Prefer checking whether the *world changed* —
+did the message actually reach the recipient — over checking whether a string appeared.
 
-**With fewer than ~10 cells, report the robust result and the heterogeneity — and do not name a
-mechanism.** A mechanism claim needs a factorial designed for it, not a post-hoc reading of cells run
-for other reasons.
+**Re-derive every reported figure from the raw logs, without consulting the scorer.** Make this a
+script rather than an intention. Scorer metadata can be a constant that looks like a measurement, and
+the only way to find that is to compute the same quantity a second way.
 
-**Write down predictions and a stop condition before running.** Otherwise every result is
-interpretable, which means none of them is. And a pre-committed stop condition is what stops an eval
-becoming a search for the cell that works.
+## Practices that cut across all three
+
+**Always a positive control.** If the manipulation cannot be shown to work in some condition, a null
+is uninterpretable. A degenerate stimulus and a robust model produce the same clean zero.
+
+**Vary the task's incidental framing before attributing an effect to your manipulation.** Field names,
+tool descriptions, the submission schema. An effect size is a property of the task, not only of the
+intervention — the same instruction can produce opposite results under two framings that differ in
+ways you thought were cosmetic.
+
+**With few cells, report the robust result and the heterogeneity, and do not name a mechanism.** A
+mechanism claim needs a factorial designed for it, not a post-hoc reading of cells that were run for
+other reasons.
+
+**Write down predictions and a stop condition before running.** Otherwise every outcome is
+interpretable, which means none of them is. A pre-committed stop condition is also what keeps an eval
+from becoming a search for the cell that works.
+
+**When two definitions of an outcome diverge, report both.** The divergence is usually the finding.
+
+**Check the document against itself, not only against the data.** Every figure can be correct and the
+write-up still contradict itself — a total that does not match its own table, two counts of different
+units presented as one. That class of error survives any amount of checking against the source data.
 
 ## What this does not cover
 
-**Adversarial robustness.** Everything above concerns evals under *friction* — a task that pulls against
-a rule, a validator that refuses. None of it involves an adversary trying to break the mechanism, and a
-safety mechanism is characterised by exactly that. My measured rates are therefore plausible lower
-bounds, and the separation between a prompt-level rule and an architectural control remains unproven:
-in my data both reached zero, so the case for the architectural one is auditability rather than
-demonstrated capability. Closing that gap needs an injection arm, which is the obvious next experiment
-and is not yet run.
+**Adversarial robustness.** Everything above concerns evaluation under *friction* — a task that pulls
+against a rule, an environment that refuses. None of it involves an adversary trying to break the
+mechanism, and a safety mechanism is characterised by exactly that. Rates measured under friction are
+plausible lower bounds, and a prompt-level rule and an architectural control can look identical until
+something attacks them.
 
-**Multi-turn and multi-agent settings.** All of this is single-agent, single-episode.
+**Multi-turn and multi-agent settings.** These principles are drawn from single-agent, single-episode
+work.
 
-**Anything about trained dispositions.** These are prompt-level and environment-level interventions.
-Nothing here speaks to what a model is like, only to what a given scaffold can make it do or prevent it
-from doing.
+**Trained dispositions.** All of this concerns prompts, environments and scaffolds — what a given
+setup can make a model do or prevent it from doing. None of it speaks to what the model is like.
