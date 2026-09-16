@@ -42,6 +42,9 @@ blockquote { border-left: 3px solid #3a3a3a; color: #c8c8c8; }
 // The description sits under a white title; muting it makes the hierarchy tonal as well as
 // dimensional, which is the only lever left once hue is gone.
 // The finding under each study on the landing page: muted, so the question above it leads.
+.principles p { color: #a6a6a6; }
+.principles p > strong:first-child { color: #ffffff; }
+h2 + p > em:only-child { color: #a6a6a6; }
 .spaced .finding { color: #a8a8a8; }
 .quarto-listing .listing-description { color: #a8a8a8; }
 .quarto-listing .listing-date { color: #8a8a8a; }

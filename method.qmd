@@ -24,6 +24,7 @@ What follows is what I check, organised by which claim it protects.
 An eval's controls are usually written in the eval and enforced by the framework. That gap is where
 this claim breaks, because a control can be present in your code and absent at runtime.
 
+::: {.principles}
 **Establish that the control fired, per episode, from the transcript.** Not from a counter, not from
 "the code path ran". A control you cannot show applied did not apply, and the difference between
 "applied" and "silently skipped" is invisible in a pass/fail result.
@@ -44,6 +45,7 @@ third-party tools, open-ended browsing, or when the noise itself is what you are
 **State what state is shared.** Anything constructed once per task rather than once per sample is
 shared across every sample and every epoch. Per-episode state belongs somewhere per-episode, or
 better, is derived from the transcript so it cannot silently regress.
+:::
 
 ## 2. Benchmark validity
 
@@ -52,6 +54,7 @@ better, is derived from the transcript so it cannot silently regress.
 Benchmarks decay, and they decay quietly: the harness works, the scorer runs, and the number moves for
 a reason that has nothing to do with the construct.
 
+::: {.principles}
 **Replicate before extending.** A replication on the original target is what licenses any claim about
 a new number. Calibrate against the authors' own labels where they released them, and mark clearly
 what is yours.
@@ -70,6 +73,7 @@ that in advance rather than after the run.
 
 **Treat "refused" and "never engaged" as different outcomes.** Collapsing them is how a saturated
 benchmark keeps reporting a safety improvement.
+:::
 
 ## 3. Metric validity
 
@@ -78,6 +82,7 @@ benchmark keeps reporting a safety improvement.
 This is where errors are hardest to see, because a detector fails **silently and in the direction of a
 tidy story**. It is also where most of my own mistakes have been.
 
+::: {.principles}
 **Print the matches and read them.** No category count should be quoted until its non-matches have
 been inspected. A heuristic over model prose fails quietly and plausibly, and the aggregate never
 shows it.
@@ -102,9 +107,11 @@ did the message actually reach the recipient — over checking whether a string 
 **Re-derive every reported figure from the raw logs, without consulting the scorer.** Make this a
 script rather than an intention. Scorer metadata can be a constant that looks like a measurement, and
 the only way to find that is to compute the same quantity a second way.
+:::
 
 ## Practices that cut across all three
 
+::: {.principles}
 **Always a positive control.** If the manipulation cannot be shown to work in some condition, a null
 is uninterpretable. A degenerate stimulus and a robust model produce the same clean zero.
 
@@ -126,6 +133,7 @@ from becoming a search for the cell that works.
 **Check the document against itself, not only against the data.** Every figure can be correct and the
 write-up still contradict itself — a total that does not match its own table, two counts of different
 units presented as one. That class of error survives any amount of checking against the source data.
+:::
 
 ## What this does not cover
 
