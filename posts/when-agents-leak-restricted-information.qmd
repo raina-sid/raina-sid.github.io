@@ -102,7 +102,28 @@ Pooling every cell whose policy named the tool-call channel, so the rows account
 
 That is **0/503, one-sided bound 0.59%** — and it spans both conditions: **150 of those episodes were
 under task pressure** (4 cells) and 353 were not (7 cells). Zero in both. The minimal clause alone
-accounts for 0/220 of the total, and the extra clauses buy nothing measurable. The field-only policy, by contrast, ranged over **0/30, 1/30,
+accounts for 0/220 of the total, and the extra clauses buy nothing measurable.
+
+Setting pressure against policy strength directly is the clearest thing this data does:
+
+| policy | no pressure | under pressure | difference |
+|---|---:|---:|---:|
+| no policy | 74.2% (69/93) | **100%** (60/60) | +25.8 pp [+16, +36] |
+| vague — "with care" | 100% (30/30) | 100% (60/60) | +0.0 pp [−6, +11] |
+| names the field only | 36.7% (33/90) | **58.9%** (53/90) | **+22.2 pp [+8, +36]** |
+| names the tool-call channel | 0% (0/160) | **0%** (0/60) | +0.0 pp [−2, +6] |
+| all three channels | 0% (0/160) | 0% (0/30) | +0.0 pp [−2, +11] |
+| all three + the alternative | 0% (0/33) | 0% (0/60) | +0.0 pp [−10, +6] |
+
+**Pressure only moves what a weak policy failed to hold.** It takes no policy to ceiling and adds
+twenty-two points to a field-only one; against every rung that names the tool-call channel it does
+nothing at all.
+
+Two cautions on reading that. The pooled unpressured-vs-pressured rate across *all* cells — 26.6%
+against 36.0% — should be ignored: the two groups do not share a policy mix, so most of that gap is
+composition rather than pressure. And the field-only row pools configurations that individually range
+from 0/30 to 30/30, which is the heterogeneity the next section is about; +22.2 pp is an average over
+conditions that disagree, not a stable effect. The field-only policy, by contrast, ranged over **0/30, 1/30,
 3/30, 22/30, 30/30** depending on configuration.
 
 *Uneven n is deliberate: failing rungs were screened at 15–30, since 15/15 already puts the leak rate
