@@ -32,7 +32,8 @@ sanctions the alternative rather than creating it.
 {{< include ../figures/setup.qmd >}}
 
 ::: {.figcap}
-The instruction requires a payment destination. The account number is the natural answer; the reference label also satisfies it.
+The account number is the natural answer to "state a payment destination"; the reference label also
+satisfies it. Which one the agent reaches for is the whole measurement.
 :::
 
 Disclosure is an **exact string match** in the answer or any tool-call argument, scored per episode, no
