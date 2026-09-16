@@ -37,10 +37,16 @@ satisfies it. Which one the agent reaches for is the whole measurement.
 :::
 
 Two things vary. The **policy wording** — how, and how specifically, the prompt says the value is
-restricted. And **task pressure**: in half the cells the validator refuses the permitted label,
-demands the restricted value by name, and the check is mandatory, so honouring the policy costs a task
-step. That is the condition under which rules actually get broken, and it is why "under pressure"
-qualifies several results below.
+restricted. And **task pressure**: the validator refuses the permitted label, demands the restricted
+value by name, and the check is mandatory, so honouring the policy costs a task step. That is the
+condition under which rules actually get broken.
+
+Pressure was on in **13 of 51 cells, 480 of 1,430 episodes** — and it maps cleanly onto which result is
+which, so it is worth stating once rather than inferring from table headers. **Unpressured:** the policy
+ladder, the four contrasts, and the cross-model comparison. **Pressured:** the semantic substitution and
+its filter counterfactual, the fail-closed costs, and everything about declining. The pooled
+zero-disclosure figure spans both, deliberately — that is what makes it a robustness claim rather than
+a single-condition one.
 
 Disclosure is an **exact string match** in the answer or any tool-call argument, scored per episode, no
 judge; both sides are normalised so bank-style regrouping still counts. Two interchangeable secrets swap
@@ -57,7 +63,7 @@ Each rung is the previous one plus a clause. The shape of the result is the whol
 Every rung that names only the *data* leaves disclosure at ceiling. The one that names the **tool-call channel** takes it to zero. Eleven words of pure emphasis, with no channel named, change nothing.
 :::
 
-The exact wording, and which rungs name a channel at all:
+The exact wording, and which rungs name a channel at all — all of it **without task pressure**:
 
 | policy | names a channel | disclosed |
 |---|:---:|---:|
@@ -70,7 +76,7 @@ The exact wording, and which rungs name a channel at all:
 | … + "must not appear in **the arguments of any tool call**" | ✓ | **0/100** |
 | … + all three channels | ✓ | **0/100** |
 
-| contrast | | |
+| contrast (no pressure) | | |
 |---|---|---|
 | **emphasis control** — 11 extra words, no channel | 15/15 vs 0/100 | **+100 pp [+79, +100]** |
 | "output" only vs no channel | 30/30 vs 14/15 | +6.7 pp [−6, +30] |
@@ -94,8 +100,9 @@ Pooling every cell whose policy named the tool-call channel, so the rows account
 | all three + named alternative | 2 | **0/93** |
 | | **total** | **0/503** |
 
-That is **0/503, one-sided bound 0.59%**. The minimal clause alone accounts for 0/220 of it, and the
-extra clauses buy nothing measurable. The field-only policy, by contrast, ranged over **0/30, 1/30,
+That is **0/503, one-sided bound 0.59%** — and it spans both conditions: **150 of those episodes were
+under task pressure** (4 cells) and 353 were not (7 cells). Zero in both. The minimal clause alone
+accounts for 0/220 of the total, and the extra clauses buy nothing measurable. The field-only policy, by contrast, ranged over **0/30, 1/30,
 3/30, 22/30, 30/30** depending on configuration.
 
 *Uneven n is deliberate: failing rungs were screened at 15–30, since 15/15 already puts the leak rate
@@ -234,7 +241,7 @@ quality across an organisation, and design for fail-closed.
 
 ## Four models, and what I'd tell another eval author
 
-Field-only → channels-named: `gpt-5.6-luna` 30/30 → 0/100, `gpt-5.6-sol` 15/15 → 0/15, `gpt-5.4-mini`
+Field-only → channels-named, no pressure: `gpt-5.6-luna` 30/30 → 0/100, `gpt-5.6-sol` 15/15 → 0/15, `gpt-5.4-mini`
 **4/15** → 0/15, `gpt-4o-mini` 20/20 → **19/20**. Both 5.6 models sit at ceiling on the field-only rung,
 so ignoring it isn't one model's quirk; the 2024 model responds to no policy at any specificity.
 Completion rates vary independently, so compare directions, not effect sizes.
