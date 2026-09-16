@@ -12,28 +12,30 @@ eval's number means what it is taken to mean.
 An eval makes three claims — about the harness, the benchmark, and the metric — and each can fail
 quietly while the run reports success. Three studies, in that order.
 
+![Each claim has its own failure mode, and each fails while the run still reports success.](figures/three-claims.svg){fig-alt="Three boxes — Harness, Benchmark, Metric — each with the question it answers and, hanging below it, the way it fails: the control can be skipped silently; the task saturates and the zero misleads; derived information flows past the match."}
+
 ::: {.spaced}
 
 ### Can the environment control what the model knows?
 
 [What's the right way to filter tool outputs in Inspect?](posts/filtering-tool-outputs-in-inspect.qmd)
 · Aug 2026\
-The interception point that looks correct fails open silently: the eval passes with the control
-skipped, and nothing in the log says so.
+[The interception point that looks correct fails open silently: the eval passes with the control
+skipped, and nothing in the log says so.]{.finding}
 
 ### Does the task still elicit the behaviour?
 
 [69% → 11% → 0%: three generations on Apollo's insider-trading eval](posts/insider-trading-eval-saturated.qmd)
 · Sep 2026\
-The 2023 result replicates, then bounds under 1% on a current model — but 298 of 300 runs leave the
-authored scenario on turn one, so the zero measures departure from the script.
+[The 2023 result replicates, then bounds under 1% on a current model — but 298 of 300 runs leave the
+authored scenario on turn one, so the zero measures departure from the script.]{.finding}
 
 ### Does the scorer detect the behaviour?
 
 [When do AI agents leak restricted information?](posts/when-agents-leak-restricted-information.qmd)
 · Sep 2026\
-Naming the restricted field changed nothing; naming the tool-call channel took disclosure to zero.
-Then information derived from the restricted value kept flowing, while the metric read zero.
+[Naming the restricted field changed nothing; naming the tool-call channel took disclosure to zero.
+Then information derived from the restricted value kept flowing, while the metric read zero.]{.finding}
 
 :::
 

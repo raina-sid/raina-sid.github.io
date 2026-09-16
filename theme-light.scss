@@ -17,6 +17,9 @@ $border-color:       #dcdcdc;
 $table-border-color: #dcdcdc;
 
 /*-- scss:rules --*/
+// The figures are generated white-on-transparent for the dark default. Inverting in light mode is
+// one rule; shipping a second set of SVGs would be two files that can drift apart.
+figure img[src$=".svg"] { filter: invert(1); }
 .navbar { border-bottom: 1px solid #000000; box-shadow: none; }
 main a, .quarto-listing a {
   text-decoration: underline;
@@ -29,6 +32,8 @@ blockquote { border-left: 3px solid #d0d0d0; color: #3a3a3a; }
 .subtitle  { color: #5a5a5a; font-weight: 400; }
 // The description sits under a white title; muting it makes the hierarchy tonal as well as
 // dimensional, which is the only lever left once hue is gone.
+// The finding under each study on the landing page: muted, so the question above it leads.
+.spaced .finding { color: #4a4a4a; }
 .quarto-listing .listing-description { color: #4a4a4a; }
 .quarto-listing .listing-date { color: #6a6a6a; }
 div.callout { border-left-color: #d0d0d0 !important; background: #fafafa; }
