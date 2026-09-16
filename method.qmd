@@ -137,6 +137,7 @@ units presented as one. That class of error survives any amount of checking agai
 
 ## What this does not cover
 
+::: {.principles}
 **Adversarial robustness.** Everything above concerns evaluation under *friction* — a task that pulls
 against a rule, an environment that refuses. None of it involves an adversary trying to break the
 mechanism, and a safety mechanism is characterised by exactly that. Rates measured under friction are
@@ -148,3 +149,4 @@ work.
 
 **Trained dispositions.** All of this concerns prompts, environments and scaffolds — what a given
 setup can make a model do or prevent it from doing. None of it speaks to what the model is like.
+:::
