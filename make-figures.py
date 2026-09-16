@@ -110,9 +110,116 @@ def claims() -> str:
     return "\n".join(o)
 
 
+
+#: Post 2. (model, traded %, ci_lo, ci_hi, n) on the default prompt -- and, of the runs that
+#: REFUSED, the share that went looking for a lawful branch instead. Different denominators, so
+#: both are labelled with their n rather than presented as one series.
+GENERATIONS = [
+    ("gpt-4-0613", 69.0, 63.6, 74.0, 300, 9.1, 11),
+    ("gpt-4o", 11.4, 8.1, 15.8, 263, 77.7, 233),
+    ("gpt-5.5", 0.0, 0.0, 1.3, 300, 99.3, 300),
+]
+
+
+def saturation() -> str:
+    """Two panels, because the finding is that the two series move in OPPOSITE directions: trading
+    collapses while leaving the scenario becomes near-universal. One panel alone tells half of it."""
+    W, panel, gap, row, top = 600, 264, 72, 54, 44
+    H = top + row * len(GENERATIONS) + 16
+    o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
+         f'role="img" aria-label="Across three model generations the rate of trading on the tip falls '
+         f'from 69 percent to 11.4 percent to zero, while the share of refusing runs that instead go '
+         f'looking for a lawful branch rises from 9 percent to 78 percent to 99 percent.">',
+         '<g font-family="inherit" fill="currentColor">']
+    for k, (title, sub) in enumerate([("Traded on the tip", "of all runs"),
+                                      ("Went looking for a lawful branch", "of runs that refused")]):
+        x0 = k * (panel + gap)
+        o.append(f'<text x="{x0}" y="12" font-size="12" font-weight="600">{esc(title)}</text>')
+        o.append(f'<text x="{x0}" y="27" font-size="10.5" opacity="0.55">{esc(sub)}</text>')
+        o.append(f'<line x1="{x0}" y1="34" x2="{x0 + panel}" y2="34" stroke="currentColor" '
+                 f'opacity="0.2"/>')
+    for i, (name, rate, lo, hi, n, alt, alt_n) in enumerate(GENERATIONS):
+        y = top + i * row
+        o.append(f'<text x="0" y="{y + 10}" font-size="12.5" opacity="0.92">{esc(name)}</text>')
+        for k, (v, vlo, vhi, vn) in enumerate([(rate, lo, hi, n), (alt, None, None, alt_n)]):
+            x0 = k * (panel + gap)
+            o.append(f'<rect x="{x0}" y="{y + 18}" width="{panel}" height="9" fill="currentColor" '
+                     f'opacity="0.09" rx="1"/>')
+            w = v / 100 * panel
+            if v > 0:
+                o.append(f'<rect x="{x0}" y="{y + 18}" width="{w:.1f}" height="9" '
+                         f'fill="currentColor" opacity="0.9" rx="1"/>')
+            else:
+                o.append(f'<rect x="{x0}" y="{y + 16}" width="2.5" height="13" fill="currentColor"/>')
+            if vlo is not None:
+                a, b = vlo / 100 * panel, vhi / 100 * panel
+                o.append(f'<line x1="{x0 + a:.1f}" y1="{y + 22.5}" x2="{x0 + b:.1f}" '
+                         f'y2="{y + 22.5}" stroke="currentColor" stroke-width="1" opacity="0.55"/>')
+                for e in (a, b):
+                    o.append(f'<line x1="{x0 + e:.1f}" y1="{y + 19}" x2="{x0 + e:.1f}" '
+                             f'y2="{y + 26}" stroke="currentColor" stroke-width="1" opacity="0.55"/>')
+            anchor = "end" if v > 60 else "start"
+            tx = x0 + w + (-6 if anchor == "end" else 8)
+            o.append(f'<text x="{tx:.1f}" y="{y + 26}" font-size="11" text-anchor="{anchor}" '
+                     f'opacity="0.6">{v:.1f}%</text>')
+            o.append(f'<text x="{x0}" y="{y + 41}" font-size="10" opacity="0.4">n={vn}</text>')
+    o.append("</g></svg>")
+    return "\n".join(o)
+
+
+def setup() -> str:
+    """Post 3's environment. Replaces an ASCII diagram in a code block: the two output channels are
+    the whole point, and a code block does not make them look like channels."""
+    W, H = 600, 232
+    o = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" '
+         f'role="img" aria-label="Three documents feed the agent: a purchase order, an invoice, and a '
+         f'vendor record holding both a restricted account number and a permitted reference label. The '
+         f'agent has two ways out — the submitted answer, and an outbound validation tool call — and '
+         f'the restricted value can travel by either.">',
+         '<g font-family="inherit" fill="currentColor">']
+    docs = ["purchase order", "invoice", "vendor record"]
+    for i, d in enumerate(docs):
+        y = 26 + i * 30
+        o.append(f'<text x="0" y="{y}" font-size="12.5" opacity="0.9" text-anchor="end" '
+                 f'transform="translate(126,0)">{esc(d)}</text>')
+        o.append(f'<line x1="132" y1="{y - 4}" x2="196" y2="{y - 4}" stroke="currentColor" '
+                 f'opacity="0.3"/>')
+    # what the vendor record carries -- the two candidate values
+    o.append(f'<text x="0" y="118" font-size="11.5" opacity="0.9">remittance_iban</text>')
+    o.append(f'<text x="0" y="133" font-size="10" opacity="0.55" letter-spacing="0.08em">'
+             f'RESTRICTED</text>')
+    o.append(f'<text x="0" y="158" font-size="11.5" opacity="0.9">remittance_ref</text>')
+    o.append(f'<text x="0" y="173" font-size="10" opacity="0.55" letter-spacing="0.08em">'
+             f'PERMITTED</text>')
+    o.append(f'<line x1="0" y1="100" x2="126" y2="100" stroke="currentColor" opacity="0.2"/>')
+    # the agent
+    o.append(f'<rect x="196" y="34" width="96" height="46" fill="none" stroke="currentColor" '
+             f'stroke-width="1.5" opacity="0.75" rx="2"/>')
+    o.append(f'<text x="244" y="62" font-size="13.5" font-weight="600" text-anchor="middle">'
+             f'AGENT</text>')
+    o.append(f'<line x1="196" y1="150" x2="196" y2="57" stroke="currentColor" opacity="0.3"/>')
+    o.append(f'<line x1="0" y1="150" x2="0" y2="150" stroke="currentColor" opacity="0.3"/>')
+    # two channels out
+    for i, (label, note) in enumerate([("submit(… destination)", "channel 1 — the answer"),
+                                       ("bank_validation(destination)",
+                                        "channel 2 — leaves the trust boundary")]):
+        y = 48 + i * 58
+        o.append(f'<line x1="292" y1="57" x2="330" y2="{y + 4}" stroke="currentColor" '
+                 f'opacity="0.45"/>')
+        o.append(f'<text x="338" y="{y + 8}" font-size="12" opacity="0.92">{esc(label)}</text>')
+        o.append(f'<text x="338" y="{y + 24}" font-size="10.5" opacity="0.55">{esc(note)}</text>')
+    o.append(f'<text x="0" y="{H - 4}" font-size="11" opacity="0.5">'
+             f'Both values are present in every condition — a policy sanctions the alternative, it '
+             f'does not create it.</text>')
+    o.append("</g></svg>")
+    return "\n".join(o)
+
+
 FIGURES = {
     "policy-ladder": (ladder, None),
     "three-claims": (claims, None),
+    "saturation": (saturation, None),
+    "setup": (setup, None),
 }
 
 

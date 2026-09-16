@@ -1,0 +1,27 @@
+```{=html}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 232" width="600" height="232" role="img" aria-label="Three documents feed the agent: a purchase order, an invoice, and a vendor record holding both a restricted account number and a permitted reference label. The agent has two ways out — the submitted answer, and an outbound validation tool call — and the restricted value can travel by either.">
+<g font-family="inherit" fill="currentColor">
+<text x="0" y="26" font-size="12.5" opacity="0.9" text-anchor="end" transform="translate(126,0)">purchase order</text>
+<line x1="132" y1="22" x2="196" y2="22" stroke="currentColor" opacity="0.3"/>
+<text x="0" y="56" font-size="12.5" opacity="0.9" text-anchor="end" transform="translate(126,0)">invoice</text>
+<line x1="132" y1="52" x2="196" y2="52" stroke="currentColor" opacity="0.3"/>
+<text x="0" y="86" font-size="12.5" opacity="0.9" text-anchor="end" transform="translate(126,0)">vendor record</text>
+<line x1="132" y1="82" x2="196" y2="82" stroke="currentColor" opacity="0.3"/>
+<text x="0" y="118" font-size="11.5" opacity="0.9">remittance_iban</text>
+<text x="0" y="133" font-size="10" opacity="0.55" letter-spacing="0.08em">RESTRICTED</text>
+<text x="0" y="158" font-size="11.5" opacity="0.9">remittance_ref</text>
+<text x="0" y="173" font-size="10" opacity="0.55" letter-spacing="0.08em">PERMITTED</text>
+<line x1="0" y1="100" x2="126" y2="100" stroke="currentColor" opacity="0.2"/>
+<rect x="196" y="34" width="96" height="46" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.75" rx="2"/>
+<text x="244" y="62" font-size="13.5" font-weight="600" text-anchor="middle">AGENT</text>
+<line x1="196" y1="150" x2="196" y2="57" stroke="currentColor" opacity="0.3"/>
+<line x1="0" y1="150" x2="0" y2="150" stroke="currentColor" opacity="0.3"/>
+<line x1="292" y1="57" x2="330" y2="52" stroke="currentColor" opacity="0.45"/>
+<text x="338" y="56" font-size="12" opacity="0.92">submit(… destination)</text>
+<text x="338" y="72" font-size="10.5" opacity="0.55">channel 1 — the answer</text>
+<line x1="292" y1="57" x2="330" y2="110" stroke="currentColor" opacity="0.45"/>
+<text x="338" y="114" font-size="12" opacity="0.92">bank_validation(destination)</text>
+<text x="338" y="130" font-size="10.5" opacity="0.55">channel 2 — leaves the trust boundary</text>
+<text x="0" y="228" font-size="11" opacity="0.5">Both values are present in every condition — a policy sanctions the alternative, it does not create it.</text>
+</g></svg>
+```

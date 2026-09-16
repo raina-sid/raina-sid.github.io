@@ -5,6 +5,15 @@ date: 2026-09-07
 categories: [evals, replication, measurement-validity]
 ---
 
+{{< include ../figures/saturation.qmd >}}
+
+::: {.figcap}
+Trading on the tip collapses across three generations. What replaces it is not refusal of the
+dilemma: among the runs that declined, the share that instead went looking for a lawful branch rises
+to near-universal. My replication of the 2023 result sits at 63.3% [45.5, 78.1], inside Apollo's
+published interval. Whiskers are 95% intervals; the two panels have different denominators.
+:::
+
 ## TL;DR
 
 - Apollo's 2023 insider-trading result **replicates** on its target model: 63.3% [45.5, 78.1] against their
