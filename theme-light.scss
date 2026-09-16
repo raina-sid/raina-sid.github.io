@@ -17,9 +17,8 @@ $border-color:       #dcdcdc;
 $table-border-color: #dcdcdc;
 
 /*-- scss:rules --*/
-// The figures are generated white-on-transparent for the dark default. Inverting in light mode is
-// one rule; shipping a second set of SVGs would be two files that can drift apart.
-figure img[src$=".svg"] { filter: invert(1); }
+// No figure-inversion rule needed: the SVGs are inlined and use currentColor, so they take the
+// page's text colour in whichever theme is active.
 .navbar { border-bottom: 1px solid #000000; box-shadow: none; }
 main a, .quarto-listing a {
   text-decoration: underline;

@@ -12,7 +12,11 @@ eval's number means what it is taken to mean.
 An eval makes three claims — about the harness, the benchmark, and the metric — and each can fail
 quietly while the run reports success. Three studies, in that order.
 
-![Each claim has its own failure mode, and each fails while the run still reports success.](figures/three-claims.svg){fig-alt="Three boxes — Harness, Benchmark, Metric — each with the question it answers and, hanging below it, the way it fails: the control can be skipped silently; the task saturates and the zero misleads; derived information flows past the match."}
+{{< include figures/three-claims.qmd >}}
+
+::: {.figcap}
+Each claim has its own failure mode, and each fails while the run still reports success.
+:::
 
 ::: {.spaced}
 

@@ -17,14 +17,14 @@ h3 { margin-top: 2rem; font-weight: 600; }
 div.callout.callout-style-simple { border-left-width: 3px; }
 
 /* ---- figures ------------------------------------------------------------------------------- */
-/* SVGs use currentColor, so they invert with the theme instead of needing two copies. */
-figure { margin: 2.6rem 0; }
-figure svg { width: 100%; height: auto; display: block; }
-figcaption {
+/* Inlined SVG using currentColor: it takes the page's text colour, so one file is right in both
+   themes. An earlier version used <img> plus a light-mode invert filter and went black in one mode. */
+svg { display: block; width: 100%; height: auto; margin: 2.4rem 0 0.9rem; }
+.figcap {
   font-size: 0.88rem;
-  line-height: 1.5;
-  margin-top: 0.9rem;
-  opacity: 0.72;
+  line-height: 1.55;
+  opacity: 0.7;
+  margin-bottom: 2.6rem;
 }
 
 /* ---- the Writing listing ------------------------------------------------------------------- */

@@ -48,9 +48,11 @@ and a no-tools contamination probe returns 0/4. `gpt-5.6-luna` unless stated.
 
 Each rung is the previous one plus a clause. The shape of the result is the whole finding:
 
-![Every rung that names only the *data* leaves disclosure at ceiling. The one that names the
-**tool-call channel** takes it to zero. Eleven words of pure emphasis, with no channel named, change
-nothing.](../figures/policy-ladder.svg){fig-alt="Horizontal bar chart of disclosure rate across eight policy rungs. The first five bars are at 100 percent: no policy 33/33, handle with care 30/30, not disclosed unnecessarily 30/30, names the field 30/30, plus emphasis 15/15. The sixth, naming only the output channel, is 14 of 15. The last two, naming the tool-call channel and naming all three channels, are both zero of 100."}
+{{< include ../figures/policy-ladder.qmd >}}
+
+::: {.figcap}
+Every rung that names only the *data* leaves disclosure at ceiling. The one that names the **tool-call channel** takes it to zero. Eleven words of pure emphasis, with no channel named, change nothing.
+:::
 
 The exact wording, and which rungs name a channel at all:
 
