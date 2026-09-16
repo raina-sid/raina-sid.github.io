@@ -40,14 +40,13 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-bf7701f1dbe371f4f3b52baf93a4c7aa.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-bf7701f1dbe371f4f3b52baf93a4c7aa.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4ae32d6415b8230fdb1a396273303054.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-87353b294c4fffaf0811ae7328f5251b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-52e1598fe2e95505fe2952fbc9f171b5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-2e4840292dbd790869ac9c422688feb2.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -319,67 +318,61 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>I build and audit evaluations for <strong>tool-using agents</strong>, with a focus on measurement validity: whether an eval’s number means what it is taken to mean.</p>
-<p>Most of my work starts from a specific worry. An agentic eval makes claims about what the model knew, what it did, and what the scorer saw — and each of those can fail on its own, quietly, while the run reports success. The three projects below are one line of work on those three failures, in that order.</p>
-<div class="callout callout-style-simple callout-note no-icon">
-<div class="callout-body d-flex">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
+<p>I build and audit evaluations for tool-using agents. The question I keep returning to is whether an eval’s number means what it is taken to mean.</p>
+<p>An eval makes three claims — about the harness, the benchmark, and the metric — and each can fail quietly while the run reports success. Three studies, in that order.</p>
+<svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 600 216" width="600" height="216" role="img" aria-label="An eval makes three claims — about the harness, the benchmark and the metric — and any of them can be false while the run reports success. Each has its own quiet failure: the control can be skipped silently, the task saturates so the zero misleads, and derived information flows past the match.">
+<g font-family="inherit" fill="currentColor">
+<text x="0" y="10" font-size="12" opacity="0.95">An eval reports one number. It stakes three claims to earn it —</text>
+<text x="0" y="27" font-size="12" opacity="0.95">and any of them can be false while the run reports success.</text>
+<g transform="translate(0,40)">
+<line x1="0" y1="0" x2="184" y2="0" stroke="currentColor" stroke-width="2" opacity="0.85"></line>
+<text x="0" y="24" font-size="14.5" font-weight="600">Harness</text>
+<text x="0" y="48" font-size="12.5" opacity="0.75">Did the model know what<tspan x="0" dy="16">we intended it to know?</tspan></text>
+<line x1="0" y1="92" x2="184" y2="92" stroke="currentColor" opacity="0.18" stroke-dasharray="3 3"></line>
+<text x="0" y="112" font-size="11.5" opacity="0.55" font-style="italic">the control can be<tspan x="0" dy="15">skipped silently</tspan></text>
+</g>
+<g transform="translate(208,40)">
+<line x1="0" y1="0" x2="184" y2="0" stroke="currentColor" stroke-width="2" opacity="0.85"></line>
+<text x="0" y="24" font-size="14.5" font-weight="600">Benchmark</text>
+<text x="0" y="48" font-size="12.5" opacity="0.75">Does the task still<tspan x="0" dy="16">elicit the behaviour?</tspan></text>
+<line x1="0" y1="92" x2="184" y2="92" stroke="currentColor" opacity="0.18" stroke-dasharray="3 3"></line>
+<text x="0" y="112" font-size="11.5" opacity="0.55" font-style="italic">the task saturates,<tspan x="0" dy="15">the zero misleads</tspan></text>
+</g>
+<g transform="translate(416,40)">
+<line x1="0" y1="0" x2="184" y2="0" stroke="currentColor" stroke-width="2" opacity="0.85"></line>
+<text x="0" y="24" font-size="14.5" font-weight="600">Metric</text>
+<text x="0" y="48" font-size="12.5" opacity="0.75">Does the scorer see it<tspan x="0" dy="16">when it happens?</tspan></text>
+<line x1="0" y1="92" x2="184" y2="92" stroke="currentColor" opacity="0.18" stroke-dasharray="3 3"></line>
+<text x="0" y="112" font-size="11.5" opacity="0.55" font-style="italic">derived information<tspan x="0" dy="15">flows past the match</tspan></text>
+</g>
+</g></svg>
+<div class="figcap">
+<p>Each claim has its own failure mode, and each fails while the run still reports success.</p>
 </div>
-<div class="callout-body-container">
-<p><strong>Code &amp; experiments → <a href="https://github.com/raina-sid/inspect-eval-replications">github.com/raina-sid/inspect-eval-replications</a></strong></p>
-<p>Environments, scorers and per-cell results for the work below, plus the audit scripts that re-derive every published figure from raw logs without trusting my own scorers.</p>
-</div>
-</div>
-</div>
-<section id="an-eval-makes-three-claims.-each-can-fail-quietly." class="level2">
-<h2 class="anchored" data-anchor-id="an-eval-makes-three-claims.-each-can-fail-quietly.">An eval makes three claims. Each can fail quietly.</h2>
-<section id="harness-validity-can-the-environment-control-what-the-model-knows" class="level3">
-<h3 class="anchored" data-anchor-id="harness-validity-can-the-environment-control-what-the-model-knows">1. Harness validity — can the environment control what the model knows?</h3>
-<p><strong><a href="./posts/filtering-tool-outputs-in-inspect.html">What’s the right way to filter tool outputs in Inspect?</a></strong> · Aug 2026</p>
-<p>The interception point that looks correct <strong>fails open silently.</strong> If a filter raises, Inspect’s <code>_emit_to_all</code> swallows the exception: the model receives unfiltered input and the eval still passes, with the control skipped and nothing in the log to say so.</p>
-<p><em>Demonstrates:</em> reading a framework’s internals to establish where a control can actually be enforced, and the difference between a control that is missing and one that is present but unenforceable. Filed as <a href="https://github.com/UKGovernmentBEIS/inspect_ai/issues/5020">an open question to the maintainers</a> rather than a complaint, with a runnable repro that needs no API key.</p>
+<div class="spaced">
+<section id="can-the-environment-control-what-the-model-knows" class="level3">
+<h3 data-anchor-id="can-the-environment-control-what-the-model-knows">Can the environment control what the model knows?</h3>
+<p><a href="./posts/filtering-tool-outputs-in-inspect.html">What’s the right way to filter tool outputs in Inspect?</a> · Aug 2026<br>
+<span class="finding">The interception point that looks correct fails open silently: the eval passes with the control skipped, and nothing in the log says so.</span></p>
 </section>
-<section id="benchmark-validity-does-the-task-still-elicit-the-behaviour" class="level3">
-<h3 class="anchored" data-anchor-id="benchmark-validity-does-the-task-still-elicit-the-behaviour">2. Benchmark validity — does the task still elicit the behaviour?</h3>
-<p><strong><a href="./posts/insider-trading-eval-saturated.html">69% → 11% → 0%: three generations on Apollo’s insider-trading eval</a></strong> · Sep 2026</p>
-<p>The 2023 result <strong>replicates</strong> on its target model — 63.3% [45.5, 78.1] against the authors’ own labels — and <strong>bounds below 1%</strong> on <code>gpt-5.5</code> (0/300, one-sided exact upper bound 0.99%). But <strong>298 of those 300 runs leave the authored scenario on turn one.</strong> The zero measures departure from the script, not resolution of the dilemma.</p>
-<p><em>Demonstrates:</em> faithful replication as the first step rather than the last, calibration against the original authors’ labels, and recognising when a benchmark has saturated so that its headline number has stopped carrying information. <a href="https://github.com/raina-sid/inspect-eval-replications/tree/main/src/evalrep/insider_trading">Code</a></p>
+<section id="does-the-task-still-elicit-the-behaviour" class="level3">
+<h3 data-anchor-id="does-the-task-still-elicit-the-behaviour">Does the task still elicit the behaviour?</h3>
+<p><a href="./posts/insider-trading-eval-saturated.html">69% → 11% → 0%: three generations on Apollo’s insider-trading eval</a> · Sep 2026<br>
+<span class="finding">The 2023 result replicates, then bounds under 1% on a current model — but 298 of 300 runs leave the authored scenario on turn one, so the zero measures departure from the script.</span></p>
 </section>
-<section id="metric-validity-does-the-scorer-detect-the-behaviour" class="level3">
-<h3 class="anchored" data-anchor-id="metric-validity-does-the-scorer-detect-the-behaviour">3. Metric validity — does the scorer detect the behaviour?</h3>
-<p><strong><a href="./posts/when-agents-leak-restricted-information.html">When do AI agents leak restricted information?</a></strong> · Sep 2026</p>
-<p>A data policy naming the restricted <em>field</em> leaked it <strong>30/30</strong>. Naming the <strong>tool-call channel</strong> took it to <strong>0/503</strong>. Then, under pressure, the same policy held the string while information derived from it kept reaching the outbound channel — with the exact-match metric reading zero.</p>
-<p><em>Demonstrates:</em> a policy ladder with an emphasis control that rules out the obvious confound; three proposed mechanisms retracted when later cells refuted them; and an audit that re-derives every figure from raw logs, which caught two of my own published numbers, one of them sign-inverted. <a href="https://github.com/raina-sid/inspect-eval-replications/tree/main/src/evalrep/secret_propagation">Code</a></p>
-<div class="callout callout-style-simple callout-note no-icon">
-<div class="callout-body d-flex">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-body-container">
-<p><strong><a href="./method.html">How I evaluate evaluations →</a></strong> — the method these three share, and what it does not cover.</p>
-</div>
-</div>
-</div>
+<section id="does-the-scorer-detect-the-behaviour" class="level3">
+<h3 data-anchor-id="does-the-scorer-detect-the-behaviour">Does the scorer detect the behaviour?</h3>
+<p><a href="./posts/when-agents-leak-restricted-information.html">When do AI agents leak restricted information?</a> · Sep 2026<br>
+<span class="finding">Naming the restricted field changed nothing; naming the tool-call channel took disclosure to zero. Then information derived from the restricted value kept flowing, while the metric read zero.</span></p>
 </section>
-</section>
-<section id="research-interests" class="level2">
-<h2 class="anchored" data-anchor-id="research-interests">Research interests</h2>
-<ul>
-<li><strong>Agent evaluations</strong> — tool-using agents in environments where the information available to the agent is the experimental condition</li>
-<li><strong>Evaluation validity</strong> — harness, benchmark and metric failures, and how to tell them apart from results</li>
-<li><strong>Information-flow and tool-use safety</strong> — what an agent can be prevented from emitting, and by which mechanism</li>
-<li><strong>Benchmark design and auditing</strong> — replication, saturation, and re-deriving reported figures from primary logs</li>
-</ul>
-</section>
-<section id="whos-writing-this" class="level2">
-<h2 class="anchored" data-anchor-id="whos-writing-this">Who’s writing this</h2>
-<p>A data scientist, twelve years in industry, based in Berlin. Most of that was forecasting and recommender systems in production — demand models and ranking, where the metric is easy to compute and what it licenses you to say is not. That turned out to be better preparation for eval work than I expected: it is the same question either way, which is whether the number you can compute is the number you actually wanted.</p>
-<p>A merged contribution to <a href="https://github.com/UKGovernmentBEIS/inspect_ai"><code>inspect_ai</code></a> (<a href="https://github.com/UKGovernmentBEIS/inspect_ai/pull/4913">PR #4913</a>), the eval framework maintained by the UK AI Security Institute · <a href="./writing.html">All writing</a> · <a href="https://github.com/raina-sid">GitHub</a> · <a href="https://www.linkedin.com/in/sidraina89/">LinkedIn</a> · <a href="mailto:sidraina89@gmail.com">Email</a></p>
-<p>If you think something here is wrong, I would like to know — that is most of the value of publishing it.</p>
+</div>
+<p><a href="./method.html">How I evaluate evaluations</a> — the method these share, and what it does not cover.<br>
+<a href="https://github.com/raina-sid/inspect-eval-replications">Code and per-cell results</a> — environments, scorers, and the audit that re-derives every published figure from raw logs.</p>
+<hr>
+<p><a href="https://github.com/raina-sid">GitHub</a> · <a href="https://www.linkedin.com/in/sidraina89/">LinkedIn</a> · <a href="mailto:sidraina89@gmail.com">Email</a> · <a href="./writing.html">All writing</a></p>
+<p>If you think something here is wrong, I would like to know.</p>
 
 
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -397,13 +390,6 @@ ul.task-list li input[type="checkbox"] {
       window.document.body.appendChild(a);
     }
     setColorSchemeToggle(hasAlternateSentinel())
-    const icon = "";
-    const anchorJS = new window.AnchorJS();
-    anchorJS.options = {
-      placement: 'right',
-      icon: icon
-    };
-    anchorJS.add('.anchored');
     const isCodeAnnotation = (el) => {
       for (const clz of el.classList) {
         if (clz.startsWith('code-annotation-')) {                     

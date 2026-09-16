@@ -1,15 +1,81 @@
-/* Spacing and type scale ONLY. All colour lives in theme-dark.scss / theme-light.scss, so
-   there is exactly one place to change it and no rule that is right in one mode and wrong in
-   the other. */
-body { font-size: 1.02rem; }
-main { max-width: 46rem; }
-pre { font-size: 0.86rem; }
+/* Spacing and type scale ONLY. All colour lives in theme-dark.scss / theme-light.scss.
 
-/* A clear step between levels, so the three-part structure is legible before it is read. */
+   Written whole, never patched. Four separate string-replace edits to this file have silently
+   failed to match, each time leaving a rule I had described as applied absent from the served CSS. */
+
+body { font-size: 1.02rem; line-height: 1.68; }
+main { max-width: 42rem; }
+p    { margin-bottom: 1.15rem; }
+pre  { font-size: 0.86rem; line-height: 1.5; }
+
 h1 { font-weight: 600; letter-spacing: -0.02em; }
-h2 { margin-top: 2.6rem; font-weight: 600; letter-spacing: -0.01em; }
-h3 { margin-top: 2rem; font-weight: 600; font-size: 1.18rem; }
-h3 + p { margin-top: 0.35rem; }
+h2 { margin-top: 2.8rem; font-weight: 600; letter-spacing: -0.01em; }
+h3 { margin-top: 2rem; font-weight: 600; }
+/* No font-size on h3: an earlier 1.18rem here was written for a section that no longer exists, and
+   its only surviving effect was to shrink the listing titles below the theme's responsive size. */
 
 div.callout.callout-style-simple { border-left-width: 3px; }
-.quarto-listing .listing-title { font-weight: 600; }
+
+/* ---- figures ------------------------------------------------------------------------------- */
+/* Inlined SVG using currentColor: it takes the page's text colour, so one file is right in both
+   themes. An earlier version used <img> plus a light-mode invert filter and went black in one mode. */
+svg { display: block; width: 100%; height: auto; margin: 2.4rem 0 0.9rem; }
+.figcap {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  opacity: 0.7;
+  margin-bottom: 2.6rem;
+}
+
+/* ---- the Writing listing ------------------------------------------------------------------- */
+/* Quarto sets margin-bottom:0 on the listing title so the description butts against it. Same
+   selector as the theme's, and styles.css loads last, so this wins on order rather than weight. */
+div.quarto-post .body h3.listing-title {
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: 0.7rem;
+}
+div.quarto-post .listing-description { line-height: 1.6; }
+div.quarto-post { padding-top: 1.4rem; padding-bottom: 1.4rem; }
+
+/* ---- landing page only (.spaced exists nowhere else) --------------------------------------- */
+
+/* The three questions. An earlier version set these to 1.02rem -- EXACTLY body size -- so they
+   differed from the prose by weight alone and the whole page read as one block. A heading needs at
+   least two of {size, weight, tone} to separate itself; these now have all three, with the finding
+   muted underneath. */
+.spaced h3 {
+  font-size: 1.32rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 0;
+  margin-bottom: 0.55rem;
+  letter-spacing: -0.01em;
+}
+
+/* Space BETWEEN the three blocks must be clearly larger than space inside them, or three studies
+   read as twelve lines. */
+.spaced p { margin-bottom: 4rem; line-height: 1.6; }
+.spaced p:last-child { margin-bottom: 2rem; }
+
+main hr { border: 0; border-top: 1px solid; opacity: 0.18; margin: 3.4rem 0 2.4rem; }
+
+/* ---- principle lists (method page) ---------------------------------------------------------- */
+/* Each principle was one paragraph opening with a bold run-in, so the statement and its explanation
+   sat at identical size and tone and the page read as a wall. Promoting the run-in to its own line
+   and muting the explanation gives the same hierarchy the landing page uses: claim, then commentary. */
+.principles p { margin-bottom: 1.9rem; }
+.principles p > strong:first-child {
+  display: block;
+  font-size: 1.08rem;
+  line-height: 1.45;
+  margin-bottom: 0.3rem;
+}
+
+/* The italic question under each section heading is a subtitle, not body text. */
+h2 + p > em:only-child {
+  display: block;
+  font-size: 1.1rem;
+  font-style: normal;
+  letter-spacing: 0.01em;
+}

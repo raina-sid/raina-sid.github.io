@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-15">
+<meta name="dcterms.date" content="2026-09-16">
 
 <title>How I evaluate evaluations – Siddharth Raina</title>
 <style>
@@ -47,8 +47,8 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-bf7701f1dbe371f4f3b52baf93a4c7aa.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-4ae32d6415b8230fdb1a396273303054.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-87353b294c4fffaf0811ae7328f5251b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-52e1598fe2e95505fe2952fbc9f171b5.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-2e4840292dbd790869ac9c422688feb2.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -80,13 +80,13 @@ ul.task-list li input[type="checkbox"] {
 
 <link rel="stylesheet" href="styles.css">
 <meta property="og:title" content="How I evaluate evaluations – Siddharth Raina">
-<meta property="og:description" content="Three claims every agentic eval makes, and how each one fails quietly">
+<meta property="og:description" content="Principles for deciding whether a number means what it is taken to mean">
 <meta property="og:image" content="https://raina-sid.github.io/og-card.png">
 <meta property="og:site_name" content="Siddharth Raina">
 <meta property="og:image:height" content="630">
 <meta property="og:image:width" content="1200">
 <meta name="twitter:title" content="How I evaluate evaluations – Siddharth Raina">
-<meta name="twitter:description" content="Three claims every agentic eval makes, and how each one fails quietly">
+<meta name="twitter:description" content="Principles for deciding whether a number means what it is taken to mean">
 <meta name="twitter:image" content="https://raina-sid.github.io/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image-height" content="630">
@@ -303,7 +303,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#harness-validity" id="toc-harness-validity" class="nav-link active" data-scroll-target="#harness-validity">1. Harness validity</a></li>
   <li><a href="#benchmark-validity" id="toc-benchmark-validity" class="nav-link" data-scroll-target="#benchmark-validity">2. Benchmark validity</a></li>
   <li><a href="#metric-validity" id="toc-metric-validity" class="nav-link" data-scroll-target="#metric-validity">3. Metric validity</a></li>
-  <li><a href="#what-holds-all-three-together" id="toc-what-holds-all-three-together" class="nav-link" data-scroll-target="#what-holds-all-three-together">What holds all three together</a></li>
+  <li><a href="#practices-that-cut-across-all-three" id="toc-practices-that-cut-across-all-three" class="nav-link" data-scroll-target="#practices-that-cut-across-all-three">Practices that cut across all three</a></li>
   <li><a href="#what-this-does-not-cover" id="toc-what-this-does-not-cover" class="nav-link" data-scroll-target="#what-this-does-not-cover">What this does not cover</a></li>
   </ul>
 </nav>
@@ -315,7 +315,7 @@ ul.task-list li input[type="checkbox"] {
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
 <h1 class="title">How I evaluate evaluations</h1>
-<p class="subtitle lead">Three claims every agentic eval makes, and how each one fails quietly</p>
+<p class="subtitle lead">Principles for deciding whether a number means what it is taken to mean</p>
 </div>
 
 
@@ -326,7 +326,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 15, 2026</p>
+      <p class="date">September 16, 2026</p>
     </div>
   </div>
   
@@ -338,61 +338,69 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>An agentic evaluation reports one number and makes three separate claims to earn it:</p>
+<p>An evaluation reports one number and stakes three claims to earn it:</p>
 <ol type="1">
-<li><strong>the model knew what the environment intended it to know</strong> — a claim about the <em>harness</em>;</li>
-<li><strong>the task still elicits the behaviour being measured</strong> — a claim about the <em>benchmark</em>;</li>
-<li><strong>the scorer sees the behaviour when it occurs</strong> — a claim about the <em>metric</em>.</li>
+<li>the model received what the design intended it to receive — a claim about the <strong>harness</strong>;</li>
+<li>the task still elicits the behaviour being measured — a claim about the <strong>benchmark</strong>;</li>
+<li>the scorer detects that behaviour when it occurs — a claim about the <strong>metric</strong>.</li>
 </ol>
-<p>Any of the three can be false while the run completes, the log looks clean and the number looks plausible. That is the problem: these failures do not announce themselves, and none of them is visible in an aggregate. Each of my three write-ups is one of these failures, found the hard way.</p>
-<p>What follows is the method that survived, stated as things I now do rather than principles I hold.</p>
+<p>Any of the three can be false while the run completes, the log looks clean, and the number looks plausible. That is what makes them dangerous: none of these failures announces itself, and none is visible in an aggregate. You find them by going looking.</p>
+<p>What follows is what I check, organised by which claim it protects.</p>
 <section id="harness-validity" class="level2">
 <h2 class="anchored" data-anchor-id="harness-validity">1. Harness validity</h2>
-<p>The claim is that the environment controlled what reached the model. In practice this is a property of framework internals, not of the eval you wrote.</p>
-<p>The case that taught me: the interception point that looks correct for filtering a tool’s output is a hook, and hooks are observers — Inspect’s <code>_emit_to_all</code> swallows exceptions. So a filter that raises lets unfiltered input through, and <strong>the eval passes with the control silently skipped.</strong> Nothing in the log distinguishes “the control applied” from “the control was never applied.”</p>
-<p>What I do now:</p>
-<ul>
-<li><strong>Verify the control fired, per episode, from the transcript.</strong> Not from a counter, and not from “the code ran.” A control that cannot be shown to have applied did not apply.</li>
-<li><strong>Prefer fail-closed.</strong> A control that silently doesn’t apply is worse than no control, because it also reads as evidence of care. If a filter cannot fail closed, curate the corpus instead — fewer moving parts, nothing to fail open.</li>
-<li><strong>Read the framework, not the docs.</strong> Both facts I needed were in the source, three paragraphs apart, and neither page pointed at the other.</li>
-</ul>
+<p><em>Did the model receive what the design intended?</em></p>
+<p>An eval’s controls are usually written in the eval and enforced by the framework. That gap is where this claim breaks, because a control can be present in your code and absent at runtime.</p>
+<div class="principles">
+<p><strong>Establish that the control fired, per episode, from the transcript.</strong> Not from a counter, not from “the code path ran”. A control you cannot show applied did not apply, and the difference between “applied” and “silently skipped” is invisible in a pass/fail result.</p>
+<p><strong>Ask what your control does when it errors.</strong> If the answer is “the run continues”, it is not a control — it is a suggestion. Interception points built for observation typically swallow exceptions by design, which means a filter that raises lets unfiltered input through while the run still reports success. Prefer mechanisms that fail closed, and if you cannot have one, at least record which episodes the control touched.</p>
+<p><strong>Read the framework’s source for where interception is actually possible.</strong> Documentation describes intent; source describes behaviour. The two diverge most often exactly where you want a guarantee.</p>
+<p><strong>If you can curate the environment instead of filtering at runtime, curate.</strong> Fewer moving parts and nothing to fail open. Runtime interception earns its keep only where curation is impossible — live third-party tools, open-ended browsing, or when the noise itself is what you are measuring.</p>
+<p><strong>State what state is shared.</strong> Anything constructed once per task rather than once per sample is shared across every sample and every epoch. Per-episode state belongs somewhere per-episode, or better, is derived from the transcript so it cannot silently regress.</p>
+</div>
 </section>
 <section id="benchmark-validity" class="level2">
 <h2 class="anchored" data-anchor-id="benchmark-validity">2. Benchmark validity</h2>
-<p>The claim is that the task still elicits the behaviour. Benchmarks decay, and they decay silently: the harness works, the scorer runs, and the number goes to zero for the wrong reason.</p>
-<p>The case: Apollo’s 2023 insider-trading result replicates on its target model, 63.3% [45.5, 78.1] against the authors’ own labels, and bounds below 1% on a 2026 model — 0/300, one-sided exact upper bound 0.99%. A tempting headline. But <strong>298 of those 300 runs leave the authored scenario on turn one</strong>, reaching for a lawful option the script never anticipated. The zero measures departure from the decision tree, not resolution of the dilemma. The eval no longer discriminates, and its number has stopped carrying the information it used to.</p>
-<p>What I do now:</p>
-<ul>
-<li><strong>Replicate before extending.</strong> The replication is what licenses any claim about the new number. Calibrate against the original authors’ labels where they released them, and mark clearly what is mine.</li>
-<li><strong>Read where the trajectories went</strong>, not just what they scored. A zero is a claim about behaviour; behaviour lives in transcripts.</li>
-<li><strong>Choose a dependent variable that published work already shows varies.</strong> My own two experiments make the point: insider-trading behaviour moved across generations, while arithmetic accuracy on structured tables was saturated on arrival. Three nulls came from picking the second kind.</li>
-</ul>
+<p><em>Does the task still elicit the behaviour?</em></p>
+<p>Benchmarks decay, and they decay quietly: the harness works, the scorer runs, and the number moves for a reason that has nothing to do with the construct.</p>
+<div class="principles">
+<p><strong>Replicate before extending.</strong> A replication on the original target is what licenses any claim about a new number. Calibrate against the authors’ own labels where they released them, and mark clearly what is yours.</p>
+<p><strong>Read where the trajectories went, not only what they scored.</strong> A zero is a claim about behaviour, and behaviour lives in transcripts. A capable model that leaves an authored scenario early scores identically to one that faced the dilemma and declined — and those mean opposite things.</p>
+<p><strong>Choose a dependent variable that published work already shows varies.</strong> A measure that is saturated on arrival cannot move, so a null tells you nothing about your manipulation. This is the cheapest avoidable way to spend a budget on an uninterpretable result.</p>
+<p><strong>Before removing information from a task, delete it from every source and check the task becomes unanswerable.</strong> If it stays answerable, withholding one route cannot cost anything — and you can know that in advance rather than after the run.</p>
+<p><strong>Treat “refused” and “never engaged” as different outcomes.</strong> Collapsing them is how a saturated benchmark keeps reporting a safety improvement.</p>
+</div>
 </section>
 <section id="metric-validity" class="level2">
 <h2 class="anchored" data-anchor-id="metric-validity">3. Metric validity</h2>
-<p>The claim is that the scorer detects the behaviour. This is where I have made the most mistakes, and where the mistakes are hardest to see, because a detector fails <strong>silently and in the direction of a tidy story</strong>.</p>
-<p>The case: a data policy naming the restricted field leaked it 30/30; naming the tool-call channel took it to 0/503. Under pressure, the same policy held the restricted string while information derived from it kept reaching the outbound channel — and the exact-match metric read <strong>zero</strong>. Whether that counts as a disclosure depends on a judgment the environment never expressed, so the scorer could not decide it. What it does establish is narrower and more useful: <strong>a zero on a disclosure metric is not evidence of containment.</strong> It is evidence that one exact string did not appear.</p>
-<p>What I do now:</p>
-<ul>
-<li><strong>Print the matches and read them.</strong> Every category count gets its non-matches inspected before it is quoted. Coding model prose with a regex has produced plausible-but-wrong numbers for me repeatedly, and the aggregate never showed it.</li>
-<li><strong>A detector must exclude every value already accounted for.</strong> A name detector that also matched the address in the column beside it turned a 1/30 → 8/30 <em>increase</em> into an apparent 30/30 → 8/30 decrease. Same data, opposite sign, and the only thing that caught it was a reader checking my arithmetic.</li>
-<li><strong>Define the outcome as the environment’s own success condition.</strong> “Produced an answer” is not “completed the task”: I reported 7/30 and 15/30 completions in cells where <strong>0/30</strong> had passed the validation the prompt made mandatory. The agents submitted over an explicit refusal.</li>
-<li><strong>Re-derive every figure from raw logs, without consulting the scorer.</strong> This is now a script rather than an intention. It found eight wrong figures across the propagation work, including two scorer metrics that were constants — one always-true, one always-false, neither visible in any rate.</li>
-<li><strong>Ask what the restricted value’s derivatives are.</strong> If the policy doesn’t name them and the detector can’t see them, a zero means very little.</li>
-</ul>
+<p><em>Does the scorer detect the behaviour?</em></p>
+<p>This is where errors are hardest to see, because a detector fails <strong>silently and in the direction of a tidy story</strong>. It is also where most of my own mistakes have been.</p>
+<div class="principles">
+<p><strong>Print the matches and read them.</strong> No category count should be quoted until its non-matches have been inspected. A heuristic over model prose fails quietly and plausibly, and the aggregate never shows it.</p>
+<p><strong>A detector must exclude every value already accounted for.</strong> Including the ones in the adjacent column. A detector that also matches something you counted elsewhere can invert the sign of a result, not merely inflate it.</p>
+<p><strong>Normalise per purpose, not per project.</strong> Stripping punctuation is correct when exact-matching an identifier whose canonical form has none, and catastrophic when shape-matching, because it turns ordinary references into false positives. One normalisation per question, not one per codebase.</p>
+<p><strong>Define the outcome as the environment’s own success condition.</strong> “Produced an answer” is not “completed the task”. Where a check exists, require that it passed — otherwise an agent that submits over an explicit refusal counts as a success.</p>
+<p><strong>Ask what the target’s derivatives are.</strong> A zero on exact matching means one exact string did not appear. If the thing you are protecting can be encoded, partially disclosed, or reconstructed from what remains, your metric does not measure containment. Prefer checking whether the <em>world changed</em> — did the message actually reach the recipient — over checking whether a string appeared.</p>
+<p><strong>Re-derive every reported figure from the raw logs, without consulting the scorer.</strong> Make this a script rather than an intention. Scorer metadata can be a constant that looks like a measurement, and the only way to find that is to compute the same quantity a second way.</p>
+</div>
 </section>
-<section id="what-holds-all-three-together" class="level2">
-<h2 class="anchored" data-anchor-id="what-holds-all-three-together">What holds all three together</h2>
-<p><strong>A positive control, always.</strong> If the manipulation cannot be shown to work in some condition, a null is uninterpretable. I once designed a probe whose stimulus was degenerate and only the positive control revealed it — the model under test masked the defect by declining the whole category.</p>
-<p><strong>Vary the task’s incidental framing before attributing an effect to your manipulation.</strong> I proposed three mechanisms for one effect and each was refuted by the next cell I ran. The same policy text gave 30/30 and 3/30 depending on whether the submit tool’s field was named <code>destination</code> or <code>required_value</code>. A policy’s measured effect size is a property of the task, not of the policy text.</p>
-<p><strong>With fewer than ~10 cells, report the robust result and the heterogeneity — and do not name a mechanism.</strong> A mechanism claim needs a factorial designed for it, not a post-hoc reading of cells run for other reasons.</p>
-<p><strong>Write down predictions and a stop condition before running.</strong> Otherwise every result is interpretable, which means none of them is. And a pre-committed stop condition is what stops an eval becoming a search for the cell that works.</p>
+<section id="practices-that-cut-across-all-three" class="level2">
+<h2 class="anchored" data-anchor-id="practices-that-cut-across-all-three">Practices that cut across all three</h2>
+<div class="principles">
+<p><strong>Always a positive control.</strong> If the manipulation cannot be shown to work in some condition, a null is uninterpretable. A degenerate stimulus and a robust model produce the same clean zero.</p>
+<p><strong>Vary the task’s incidental framing before attributing an effect to your manipulation.</strong> Field names, tool descriptions, the submission schema. An effect size is a property of the task, not only of the intervention — the same instruction can produce opposite results under two framings that differ in ways you thought were cosmetic.</p>
+<p><strong>With few cells, report the robust result and the heterogeneity, and do not name a mechanism.</strong> A mechanism claim needs a factorial designed for it, not a post-hoc reading of cells that were run for other reasons.</p>
+<p><strong>Write down predictions and a stop condition before running.</strong> Otherwise every outcome is interpretable, which means none of them is. A pre-committed stop condition is also what keeps an eval from becoming a search for the cell that works.</p>
+<p><strong>When two definitions of an outcome diverge, report both.</strong> The divergence is usually the finding.</p>
+<p><strong>Check the document against itself, not only against the data.</strong> Every figure can be correct and the write-up still contradict itself — a total that does not match its own table, two counts of different units presented as one. That class of error survives any amount of checking against the source data.</p>
+</div>
 </section>
 <section id="what-this-does-not-cover" class="level2">
 <h2 class="anchored" data-anchor-id="what-this-does-not-cover">What this does not cover</h2>
-<p><strong>Adversarial robustness.</strong> Everything above concerns evals under <em>friction</em> — a task that pulls against a rule, a validator that refuses. None of it involves an adversary trying to break the mechanism, and a safety mechanism is characterised by exactly that. My measured rates are therefore plausible lower bounds, and the separation between a prompt-level rule and an architectural control remains unproven: in my data both reached zero, so the case for the architectural one is auditability rather than demonstrated capability. Closing that gap needs an injection arm, which is the obvious next experiment and is not yet run.</p>
-<p><strong>Multi-turn and multi-agent settings.</strong> All of this is single-agent, single-episode.</p>
-<p><strong>Anything about trained dispositions.</strong> These are prompt-level and environment-level interventions. Nothing here speaks to what a model is like, only to what a given scaffold can make it do or prevent it from doing.</p>
+<div class="principles">
+<p><strong>Adversarial robustness.</strong> Everything above concerns evaluation under <em>friction</em> — a task that pulls against a rule, an environment that refuses. None of it involves an adversary trying to break the mechanism, and a safety mechanism is characterised by exactly that. Rates measured under friction are plausible lower bounds, and a prompt-level rule and an architectural control can look identical until something attacks them.</p>
+<p><strong>Multi-turn and multi-agent settings.</strong> These principles are drawn from single-agent, single-episode work.</p>
+<p><strong>Trained dispositions.</strong> All of this concerns prompts, environments and scaffolds — what a given setup can make a model do or prevent it from doing. None of it speaks to what the model is like.</p>
+</div>
 
 
 </section>
