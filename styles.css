@@ -18,8 +18,10 @@ div.callout.callout-style-simple { border-left-width: 3px; }
 
 /* ---- figures ------------------------------------------------------------------------------- */
 /* Inlined SVG using currentColor: it takes the page's text colour, so one file is right in both
-   themes. An earlier version used <img> plus a light-mode invert filter and went black in one mode. */
-svg { display: block; width: 100%; height: auto; margin: 2.4rem 0 0.9rem; }
+   themes. An earlier version used <img> plus a light-mode invert filter and went black in one mode.
+   Scoped to `main`: unscoped, this rule also caught the navbar's search icon, gave it ~52px of
+   vertical margin, and made the header ~125px tall with the icon sitting below the links. */
+main svg { display: block; width: 100%; height: auto; margin: 2.4rem 0 0.9rem; }
 .figcap {
   font-size: 0.88rem;
   line-height: 1.55;
@@ -79,3 +81,8 @@ h2 + p > em:only-child {
   font-style: normal;
   letter-spacing: 0.01em;
 }
+
+/* ---- navbar ------------------------------------------------------------------------------- */
+/* Bootswatch pads the navbar 1rem top and bottom; half that keeps the header clearly secondary to
+   the page title below it. */
+.navbar { --bs-navbar-padding-y: 0.5rem; }
