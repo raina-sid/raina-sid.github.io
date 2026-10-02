@@ -52,6 +52,9 @@ format:
     code-overflow: wrap
     anchor-sections: true
     link-external-newwindow: true
+    # GoatCounter analytics (see analytics.html). include-in-header injects it
+    # into every rendered page's <head>.
+    include-in-header: analytics.html
 
 # Bibliography support is configured now so the survey can use it later
 # without restructuring: add `bibliography: references.bib` to a post's front
